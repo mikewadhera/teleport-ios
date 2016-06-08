@@ -1,5 +1,6 @@
 
 @import AVFoundation;
+@import Photos;
 
 #import "ViewController.h"
 
@@ -18,9 +19,12 @@ typedef NS_ENUM( NSInteger, TPViewport ) {
 
 static const AVCaptureDevicePosition TPViewportTopCamera = AVCaptureDevicePositionBack;
 static const AVCaptureDevicePosition TPViewportBottomCamera = AVCaptureDevicePositionFront;
-static const TPViewport TPInitialViewport = TPViewportTop;
+static const TPViewport TPRecordFirstViewport = TPViewportTop;
+static const TPViewport TPRecordSecondViewport = TPViewportBottom;
+static const NSTimeInterval TPRecordFirstInterval = 3;
+static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
 
-@interface ViewController ()
+@interface ViewController () <AVCaptureFileOutputRecordingDelegate>
 
 @property (nonatomic) UIButton *recordButton;
 @property (nonatomic) UIView *topView;
@@ -41,9 +45,6 @@ static const TPViewport TPInitialViewport = TPViewportTop;
 @end
 
 @implementation ViewController
-{
-    TPViewport activeViewport;
-}
 
 - (BOOL)prefersStatusBarHidden {
     return YES;
@@ -54,7 +55,7 @@ static const TPViewport TPInitialViewport = TPViewportTop;
     
     // Create the AV session
     self.session = [[AVCaptureSession alloc] init];
-    self.session.sessionPreset = AVCaptureSessionPresetPhoto;
+    //self.session.sessionPreset = AVCaptureSessionPresetPhoto;
     
     // Create the AV session queue
     self.sessionQueue = dispatch_queue_create( "session queue", DISPATCH_QUEUE_SERIAL );
@@ -205,7 +206,7 @@ static const TPViewport TPInitialViewport = TPViewportTop;
     
     AVCaptureDevicePosition initialCamera;
     
-    switch (TPInitialViewport)
+    switch (TPRecordFirstViewport)
     {
         case TPViewportTop:
         {
@@ -271,7 +272,7 @@ static const TPViewport TPInitialViewport = TPViewportTop;
 
 - (void)initPreview
 {
-    switch (TPInitialViewport)
+    switch (TPRecordFirstViewport)
     {
         case TPViewportTop:
         {
@@ -288,14 +289,9 @@ static const TPViewport TPInitialViewport = TPViewportTop;
 
 - (void)updateViewport:(TPViewport)viewport
 {
-    if (viewport == activeViewport) {
-        return;
-    }
-    
-    activeViewport = viewport;
     AVCaptureDevicePosition camera;
     
-    switch (activeViewport)
+    switch (viewport)
     {
         case TPViewportTop:
         {
@@ -342,6 +338,9 @@ static const TPViewport TPInitialViewport = TPViewportTop;
     if ( connection.isVideoStabilizationSupported ) {
         connection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeOff;
     }
+    if ( connection.isVideoMirroringSupported ) {
+        connection.videoMirrored = TRUE;
+    }
     
     [self.session commitConfiguration];
 }
@@ -356,8 +355,63 @@ static const TPViewport TPInitialViewport = TPViewportTop;
 
 -(void)didTapRecord:(id)button
 {
-    NSLog(@"HERE");
-    [self updateViewport:TPViewportBottom];
+    [self record:TPRecordFirstViewport];
+}
+
+-(void)record:(TPViewport)viewport
+{
+    switch (viewport)
+    {
+        case TPRecordFirstViewport:
+        {
+            self.recordButton.hidden = YES;
+            [self startRecording];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordFirstInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                [self stopRecording];
+                [self record:TPViewportBottom];
+            });
+            break;
+        }
+        case TPRecordSecondViewport:
+        {
+            [self updateViewport:viewport];
+            [self startRecording];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordSecondInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                [self stopRecording];
+                self.recordButton.hidden = NO;
+            });
+            break;
+        }
+    }
+}
+
+-(void)startRecording
+{
+    dispatch_async( self.sessionQueue, ^{
+        if ( ! self.movieFileOutput.isRecording ) {
+            if ( [UIDevice currentDevice].isMultitaskingSupported ) {
+                // Setup background task. This is needed because the -[captureOutput:didFinishRecordingToOutputFileAtURL:fromConnections:error:]
+                // callback is not received until AVCam returns to the foreground unless you request background execution time.
+                // This also ensures that there will be time to write the file to the photo library when AVCam is backgrounded.
+                // To conclude this background execution, -endBackgroundTask is called in
+                // -[captureOutput:didFinishRecordingToOutputFileAtURL:fromConnections:error:] after the recorded file has been saved.
+                self.backgroundRecordingID = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:nil];
+            }
+            // Start recording to a temporary file.
+            NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
+            NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
+            [self.movieFileOutput startRecordingToOutputFileURL:[NSURL fileURLWithPath:outputFilePath] recordingDelegate:self];
+        }
+    } );
+}
+
+-(void)stopRecording
+{
+    dispatch_async( self.sessionQueue, ^{
+        if (self.movieFileOutput.isRecording) {
+            [self.movieFileOutput stopRecording];
+        }
+    });
 }
 
 #pragma mark KVO and Notifications
@@ -477,6 +531,78 @@ static const TPViewport TPInitialViewport = TPViewportTop;
 //            self.cameraUnavailableLabel.hidden = YES;
 //        }];
 //    }
+}
+
+#pragma mark File Output Recording Delegate
+
+- (void)captureOutput:(AVCaptureFileOutput *)captureOutput didStartRecordingToOutputFileAtURL:(NSURL *)fileURL fromConnections:(NSArray *)connections
+{
+    dispatch_async( dispatch_get_main_queue(), ^{
+        NSLog(@"Recording...");
+//        self.recordButton.enabled = YES;
+//        [self.recordButton setTitle:NSLocalizedString( @"Stop", @"Recording button stop title") forState:UIControlStateNormal];
+    });
+}
+
+- (void)captureOutput:(AVCaptureFileOutput *)captureOutput didFinishRecordingToOutputFileAtURL:(NSURL *)outputFileURL fromConnections:(NSArray *)connections error:(NSError *)error
+{
+    NSLog(@"STOPPED.");
+    // Note that currentBackgroundRecordingID is used to end the background task associated with this recording.
+    // This allows a new recording to be started, associated with a new UIBackgroundTaskIdentifier, once the movie file output's isRecording property
+    // is back to NO — which happens sometime after this method returns.
+    // Note: Since we use a unique file path for each recording, a new recording will not overwrite a recording currently being saved.
+    UIBackgroundTaskIdentifier currentBackgroundRecordingID = self.backgroundRecordingID;
+    self.backgroundRecordingID = UIBackgroundTaskInvalid;
+    
+    dispatch_block_t cleanup = ^{
+        [[NSFileManager defaultManager] removeItemAtURL:outputFileURL error:nil];
+        if ( currentBackgroundRecordingID != UIBackgroundTaskInvalid ) {
+            [[UIApplication sharedApplication] endBackgroundTask:currentBackgroundRecordingID];
+        }
+    };
+    
+    BOOL success = YES;
+    
+    if ( error ) {
+        NSLog( @"Movie file finishing error: %@", error );
+        success = [error.userInfo[AVErrorRecordingSuccessfullyFinishedKey] boolValue];
+    }
+    if ( success ) {
+        // Check authorization status.
+        [PHPhotoLibrary requestAuthorization:^( PHAuthorizationStatus status ) {
+            if ( status == PHAuthorizationStatusAuthorized ) {
+                // Save the movie file to the photo library and cleanup.
+                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                    // In iOS 9 and later, it's possible to move the file into the photo library without duplicating the file data.
+                    // This avoids using double the disk space during save, which can make a difference on devices with limited free disk space.
+                    if ( [PHAssetResourceCreationOptions class] ) {
+                        PHAssetResourceCreationOptions *options = [[PHAssetResourceCreationOptions alloc] init];
+                        options.shouldMoveFile = YES;
+                        PHAssetCreationRequest *changeRequest = [PHAssetCreationRequest creationRequestForAsset];
+                        [changeRequest addResourceWithType:PHAssetResourceTypeVideo fileURL:outputFileURL options:options];
+                    }
+                    else {
+                        [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:outputFileURL];
+                    }
+                } completionHandler:^( BOOL success, NSError *error ) {
+                    if ( ! success ) {
+                        NSLog( @"Could not save movie to photo library: %@", error );
+                    }
+                    cleanup();
+                }];
+            }
+            else {
+                cleanup();
+            }
+        }];
+    }
+    else {
+        cleanup();
+    }
+    
+    dispatch_async( dispatch_get_main_queue(), ^{
+        self.recordButton.hidden = NO;
+    });
 }
 
 #pragma mark Actions
