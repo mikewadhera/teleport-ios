@@ -25,35 +25,40 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 @interface IDCaptureSessionAssetWriterCoordinator () <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, IDAssetWriterCoordinatorDelegate>
 
+// Core
+@property (nonatomic, assign, readonly) AVCaptureDevicePosition devicePosition;
+@property (nonatomic, strong) AVCaptureSession *captureSession;
+@property (nonatomic, strong) dispatch_queue_t delegateCallbackQueue;
+@property (nonatomic, weak) id<IDCaptureSessionCoordinatorDelegate> delegate;
+@property (nonatomic, getter=isSessionRunning) BOOL sessionRunning;
 @property (nonatomic, strong) dispatch_queue_t sessionQueue;
 @property (nonatomic, strong) AVCaptureVideoPreviewLayer *previewLayer;
 
+// Inputs
+@property (nonatomic, strong) AVCaptureDeviceInput *cameraDeviceInput;
+@property (nonatomic, strong) AVCaptureDeviceInput *audioDeviceInput;
+
+// Outputs
 @property (nonatomic, strong) dispatch_queue_t videoDataOutputQueue;
 @property (nonatomic, strong) dispatch_queue_t audioDataOutputQueue;
-
 @property (nonatomic, strong) AVCaptureVideoDataOutput *videoDataOutput;
 @property (nonatomic, strong) AVCaptureAudioDataOutput *audioDataOutput;
-
 @property (nonatomic, strong) AVCaptureConnection *audioConnection;
 @property (nonatomic, strong) AVCaptureConnection *videoConnection;
-
 @property (nonatomic, strong) NSDictionary *videoCompressionSettings;
 @property (nonatomic, strong) NSDictionary *audioCompressionSettings;
-
 @property (nonatomic, strong) AVAssetWriter *assetWriter;
-
-@property (nonatomic, assign) RecordingStatus recordingStatus;
-@property (nonatomic, strong) NSURL *recordingURL;
-
 @property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputVideoFormatDescription;
 @property(nonatomic, retain) __attribute__((NSObject)) CMFormatDescriptionRef outputAudioFormatDescription;
 @property(nonatomic, retain) IDAssetWriterCoordinator *assetWriterCoordinator;
 
+// Recording
+@property (nonatomic, assign) RecordingStatus recordingStatus;
+@property (nonatomic, strong) NSURL *recordingURL;
+
 @end
 
 @implementation IDCaptureSessionAssetWriterCoordinator
-
-@synthesize devicePosition = _devicePosition;
 
 - (instancetype)initWithDevicePosition:(AVCaptureDevicePosition)position
 {
