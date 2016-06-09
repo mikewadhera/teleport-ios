@@ -6,8 +6,7 @@
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
-    TPCameraSetupResultCameraNotAuthorized,
-    TPCameraSetupResultSessionConfigurationFailed
+    TPCameraSetupResultCameraNotAuthorized
 };
 
 typedef NS_ENUM( NSInteger, TPViewport ) {
@@ -15,16 +14,23 @@ typedef NS_ENUM( NSInteger, TPViewport ) {
     TPViewportBottom
 };
 
-typedef NS_ENUM( NSInteger, TPRecording ) {
-    TPRecordingIdle,
-    TPRecordingFirst,
-    TPRecordingFirstFinished,
-    TPRecordingFirstFailed,
-    TPRecordingSecond,
-    TPRecordingSecondFinished,
-    TPRecordingSecondFailed,
-    TPRecordingComplete
+typedef NS_ENUM( NSInteger, TPState ) {
+    TPStateSessionStopped,
+    TPStateSessionStopping,
+    TPStateSessionStarting,
+    TPStateSessionStarted,
+    TPStateSessionConfigurationFailed,
+    TPStateRecordingIdle,
+    TPStateRecordingStarted,
+    TPStateRecordingFirst,
+    TPStateRecordingFirstFinished,
+    TPStateRecordingFirstFailed,
+    TPStateRecordingSecond,
+    TPStateRecordingSecondFinished,
+    TPStateRecordingSecondFailed,
+    TPStateRecordingCompleted
 };
+typedef void (^ AssertFromBlock)(TPState);
 
 // Constants
 static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionBack;
@@ -42,7 +48,7 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 @property (nonatomic) TPCameraSetupResult setupResult;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
 
-@property (nonatomic) TPRecording recordingStatus;
+@property (nonatomic) TPState status;
 @property (nonatomic) UIButton *recordButton;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
 @property (nonatomic) AVPlayer *firstPlayer;
@@ -58,6 +64,7 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 {
     CGRect topViewportRect;
     CGRect bottomViewportRect;
+    BOOL sessionConfigurationFailed;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -125,7 +132,6 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     _recordButton.clipsToBounds = YES;
     [_recordButton setImage:[UIImage imageNamed:@"record.png"] forState:UIControlStateNormal];
     [_recordButton addTarget:self action:@selector(didTapRecord:) forControlEvents:UIControlEventTouchUpInside];
-    _recordButton.enabled = NO; // Not enabled until session is running (in coordinator delegate)
     [self.view addSubview:_recordButton];
     
     // Players
@@ -143,22 +149,20 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 {
     [super viewWillAppear:animated];
     
+    if (sessionConfigurationFailed) {
+        [self showCameraCaptureErrorDialog];
+    }
+    
     switch ( _setupResult )
     {
         case TPCameraSetupResultSuccess:
         {
-            // Only start the session running if setup succeeded
-            [_sessionCoordinator startRunning];
+            [self transitionToStatus:TPStateSessionStarting];
             break;
         }
         case TPCameraSetupResultCameraNotAuthorized:
         {
             [self showCameraPermissionErrorDialog];
-            break;
-        }
-        case TPCameraSetupResultSessionConfigurationFailed:
-        {
-            [self showCameraCaptureErrorDialog];
             break;
         }
     }
@@ -167,7 +171,7 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 - (void)viewDidDisappear:(BOOL)animated
 {
     if ( _setupResult == TPCameraSetupResultSuccess ) {
-        [_sessionCoordinator stopRunning];
+        [self transitionToStatus:TPStateSessionStopping];
     }
     
     [super viewDidDisappear:animated];
@@ -205,26 +209,6 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     }
 }
 
-- (void)updateViewport:(TPViewport)viewport
-{
-    AVCaptureDevicePosition targetCamera;
-    switch (viewport)
-    {
-        case TPViewportTop:
-        {
-            targetCamera = TPViewportTopCamera;
-            break;
-        }
-        case TPViewportBottom:
-        {
-            targetCamera = TPViewportBottomCamera;
-            break;
-        }
-    }
-    [_sessionCoordinator setDevicePosition:targetCamera];
-    [self moveLayer:_previewLayer to:viewport];
-}
-
 - (void)moveLayer:(CALayer*)layer to:(TPViewport)viewport
 {
     CGRect targetFrame;
@@ -249,73 +233,100 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 
 -(void)didTapRecord:(id)button
 {
-    [self transitionToRecordingStatus:TPRecordingFirst];
+    [self transitionToStatus:TPStateRecordingFirst];
 }
 
--(void)transitionToRecordingStatus:(TPRecording)newStatus
+-(void)transitionToStatus:(TPState)newStatus
 {
-    TPRecording oldStatus = _recordingStatus;
-    _recordingStatus = newStatus;
+    TPState oldStatus = _status;
+    _status = newStatus;
     
     NSLog(@"%ld --> %ld", oldStatus, newStatus);
     
-    dispatch_block_t halt = ^{
-        [self throwFatalTransitionErrorFrom:oldStatus to:newStatus];
+    AssertFromBlock assertFrom = ^(TPState fromState) {
+        if (oldStatus != fromState) {
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                           reason:[NSString
+                                                   stringWithFormat:@"Unexpected transition: %ld to %ld", oldStatus, newStatus]
+                                         userInfo:nil];
+        }
     };
     
     if (oldStatus != newStatus) {
-        if (newStatus == TPRecordingFirst) {
+        if (newStatus == TPStateSessionStarting) {
             
-            if (oldStatus != TPRecordingIdle) {
-                halt();
-            } else {
-                [UIApplication sharedApplication].idleTimerDisabled = YES;
-                _recordButton.hidden = YES;
-                [_sessionCoordinator startRecording];
-                [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordFirstInterval];
+            _recordButton.enabled = NO;
+            [_sessionCoordinator startRunning];
+            
+        } else if (newStatus == TPStateSessionStopping) {
+            
+            _recordButton.enabled = NO;
+            [_sessionCoordinator stopRunning];
+            
+            
+        } else if (newStatus == TPStateSessionConfigurationFailed) {
+            
+            _recordButton.enabled = NO;
+            sessionConfigurationFailed = YES; // checked in viewWillAppear
+        
+        } else if (newStatus == TPStateSessionStarted) {
+            
+            _recordButton.enabled = YES;
+            [self transitionToStatus:TPStateRecordingIdle];
+            
+        } else if (newStatus == TPStateRecordingFirst) {
+            
+            assertFrom(TPStateRecordingIdle);
+            [UIApplication sharedApplication].idleTimerDisabled = YES;
+            _recordButton.hidden = YES;
+            [_sessionCoordinator startRecording];
+            [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordFirstInterval];
+            
+        } else if (newStatus == TPStateRecordingFirstFinished) {
+            
+            assertFrom(TPStateRecordingFirst);
+            [self transitionToStatus:TPStateRecordingSecond];
+            
+        } else if (newStatus == TPStateRecordingSecond) {
+            
+            assertFrom(TPStateRecordingFirstFinished);
+            AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_firstVideoURL];
+            [_firstPlayer replaceCurrentItemWithPlayerItem:item];
+            AVCaptureDevicePosition targetCamera;
+            switch (TPRecordSecondViewport)
+            {
+                case TPViewportTop:
+                {
+                    targetCamera = TPViewportTopCamera;
+                    break;
+                }
+                case TPViewportBottom:
+                {
+                    targetCamera = TPViewportBottomCamera;
+                    break;
+                }
             }
+            [_sessionCoordinator setDevicePosition:targetCamera];
+            [self moveLayer:_previewLayer to:TPRecordSecondViewport];
+            [_firstPlayer play];
+            [_sessionCoordinator startRecording];
+            [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordSecondInterval];
             
-        } else if (newStatus == TPRecordingFirstFinished) {
+        } else if (newStatus == TPStateRecordingSecondFinished) {
             
-            if (oldStatus != TPRecordingFirst) {
-                halt();
-            } else {
-                [self transitionToRecordingStatus:TPRecordingSecond];
-            }
+            assertFrom(TPStateRecordingSecond);
+            AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_secondVideoURL];
+            [_secondPlayer replaceCurrentItemWithPlayerItem:item];
+            [_secondPlayer play];
+            [_previewLayer removeFromSuperlayer];
+            [self transitionToStatus:TPStateRecordingCompleted];
             
-        } else if (newStatus == TPRecordingSecond) {
+        } else if (newStatus == TPStateRecordingCompleted) {
             
-            if (oldStatus != TPRecordingFirstFinished) {
-                halt();
-            } else {
-                AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_firstVideoURL];
-                [_firstPlayer replaceCurrentItemWithPlayerItem:item];
-                [self updateViewport:TPRecordSecondViewport];
-                [_firstPlayer play];
-                [_sessionCoordinator startRecording];
-                [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordSecondInterval];
-            }
-            
-        } else if (newStatus == TPRecordingSecondFinished) {
-            
-            if (oldStatus != TPRecordingSecond) {
-                halt();
-            } else {
-                AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_secondVideoURL];
-                [_secondPlayer replaceCurrentItemWithPlayerItem:item];
-                [_secondPlayer play];
-                [_previewLayer removeFromSuperlayer];
-                [self transitionToRecordingStatus:TPRecordingComplete];
-            }
-            
-        } else if (newStatus == TPRecordingComplete) {
-            
-            if (oldStatus != TPRecordingSecondFinished) {
-                halt();
-            } else {
-                [UIApplication sharedApplication].idleTimerDisabled = NO;
-                [self transitionToRecordingStatus:TPRecordingIdle];
-            }
+            assertFrom(TPStateRecordingSecondFinished);
+            [UIApplication sharedApplication].idleTimerDisabled = NO;
+            [self transitionToStatus:TPStateRecordingIdle];
+
         }
     }
 }
@@ -324,12 +335,14 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 
 - (void)coordinatorSessionConfigurationDidFail:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
-    _setupResult = TPCameraSetupResultSessionConfigurationFailed;
+    [self transitionToStatus:TPStateSessionConfigurationFailed];
 }
 
 -(void)coordinatorSessionDidFinishStarting:(IDCaptureSessionAssetWriterCoordinator *)coordinator running:(BOOL)isRunning
 {
-    _recordButton.enabled = isRunning;
+    if (isRunning) {
+        [self transitionToStatus:TPStateSessionStarted];
+    }
 }
 
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings
@@ -344,6 +357,7 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 
 - (void)coordinatorDidBeginRecording:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
+    
 }
 
 - (void)coordinator:(IDCaptureSessionAssetWriterCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
@@ -354,12 +368,12 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
         success = [error.userInfo[AVErrorRecordingSuccessfullyFinishedKey] boolValue];
     }
     if ( success ) {
-        if (_recordingStatus == TPRecordingFirst) {
+        if (_status == TPStateRecordingFirst) {
             _firstVideoURL = outputFileURL;
-            [self transitionToRecordingStatus:TPRecordingFirstFinished];
-        } else if (_recordingStatus == TPRecordingSecond) {
+            [self transitionToStatus:TPStateRecordingFirstFinished];
+        } else if (_status == TPStateRecordingSecond) {
             _secondVideoURL = outputFileURL;
-            [self transitionToRecordingStatus:TPRecordingSecondFinished];
+            [self transitionToStatus:TPStateRecordingSecondFinished];
         }
     }
 }
@@ -387,14 +401,6 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil];
     [alertController addAction:cancelAction];
     [self presentViewController:alertController animated:YES completion:nil];
-}
-
--(void)throwFatalTransitionErrorFrom:(TPRecording)t1 to:(TPRecording)t2
-{
-    @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                   reason:[NSString stringWithFormat:@"Tried to transition from %ld to %ld", (long)t1, t2]
-                                 userInfo:nil];
-    return;
 }
 
 @end
