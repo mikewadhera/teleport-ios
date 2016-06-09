@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */; };
 		FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB41A1D08BBBA00125716 /* IDAssetWriterCoordinator.m */; };
-		FB0CB41F1D08BBBA00125716 /* IDCaptureSessionCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB41C1D08BBBA00125716 /* IDCaptureSessionCoordinator.m */; };
 		FB0CB4261D08BC2400125716 /* IDFileManager.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB4241D08BC2400125716 /* IDFileManager.m */; };
 		FB0D9D571D0622DA0024CDC4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0D9D561D0622DA0024CDC4 /* main.m */; };
 		FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0D9D591D0622DA0024CDC4 /* AppDelegate.m */; };
@@ -25,8 +24,6 @@
 		FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDCaptureSessionAssetWriterCoordinator.m; sourceTree = "<group>"; };
 		FB0CB4191D08BBBA00125716 /* IDAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDAssetWriterCoordinator.h; sourceTree = "<group>"; };
 		FB0CB41A1D08BBBA00125716 /* IDAssetWriterCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDAssetWriterCoordinator.m; sourceTree = "<group>"; };
-		FB0CB41B1D08BBBA00125716 /* IDCaptureSessionCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDCaptureSessionCoordinator.h; sourceTree = "<group>"; };
-		FB0CB41C1D08BBBA00125716 /* IDCaptureSessionCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDCaptureSessionCoordinator.m; sourceTree = "<group>"; };
 		FB0CB4231D08BC2400125716 /* IDFileManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDFileManager.h; sourceTree = "<group>"; };
 		FB0CB4241D08BC2400125716 /* IDFileManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDFileManager.m; sourceTree = "<group>"; };
 		FB0D9D521D0622DA0024CDC4 /* Teleport.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Teleport.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -60,8 +57,6 @@
 				FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */,
 				FB0CB4191D08BBBA00125716 /* IDAssetWriterCoordinator.h */,
 				FB0CB41A1D08BBBA00125716 /* IDAssetWriterCoordinator.m */,
-				FB0CB41B1D08BBBA00125716 /* IDCaptureSessionCoordinator.h */,
-				FB0CB41C1D08BBBA00125716 /* IDCaptureSessionCoordinator.m */,
 			);
 			name = IDCaptureSessionCoordinator;
 			sourceTree = "<group>";
@@ -193,7 +188,6 @@
 				FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */,
 				FB0CB4261D08BC2400125716 /* IDFileManager.m in Sources */,
 				FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */,
-				FB0CB41F1D08BBBA00125716 /* IDCaptureSessionCoordinator.m in Sources */,
 				FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */,
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
 			);

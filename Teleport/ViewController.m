@@ -322,14 +322,14 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     }
 }
 
-#pragma mark = IDCaptureSessionCoordinatorDelegate methods
+#pragma mark = IDCaptureSessionAssetWriterCoordinatorDelegate methods
 
-- (void)coordinatorSessionConfigurationDidFail:(IDCaptureSessionCoordinator *)coordinator
+- (void)coordinatorSessionConfigurationDidFail:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
     _setupResult = TPCameraSetupResultSessionConfigurationFailed;
 }
 
--(void)coordinatorSessionDidFinishStarting:(IDCaptureSessionCoordinator *)coordinator running:(BOOL)isRunning
+-(void)coordinatorSessionDidFinishStarting:(IDCaptureSessionAssetWriterCoordinator *)coordinator running:(BOOL)isRunning
 {
     _recordButton.enabled = isRunning;
 }
@@ -344,11 +344,11 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
             nil];
 }
 
-- (void)coordinatorDidBeginRecording:(IDCaptureSessionCoordinator *)coordinator
+- (void)coordinatorDidBeginRecording:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
 }
 
-- (void)coordinator:(IDCaptureSessionCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
+- (void)coordinator:(IDCaptureSessionAssetWriterCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
 {
     BOOL success = YES;
     if ( error ) {
