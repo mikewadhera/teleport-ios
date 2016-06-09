@@ -248,6 +248,18 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         }
     }
     _videoConnection = [_videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
+    // Turn off stabilization
+    if ( [_videoConnection isVideoStabilizationSupported] ) {
+        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeOff];
+    }
+    if (_devicePosition == AVCaptureDevicePositionFront) {
+        if ( [_videoConnection isVideoOrientationSupported] ) {
+            [_videoConnection setVideoOrientation:AVCaptureVideoOrientationLandscapeRight];
+        }
+        if ( [_videoConnection isVideoMirroringSupported] ) {
+            [_videoConnection setVideoMirrored:YES];
+        }
+    }
     
     // Audio
     self.audioDataOutput = [AVCaptureAudioDataOutput new];
