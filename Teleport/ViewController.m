@@ -3,8 +3,8 @@
 @import Photos;
 
 #import "ViewController.h"
-
-static void * SessionRunningContext = &SessionRunningContext;
+#import "IDCaptureSessionAssetWriterCoordinator.h"
+#import "IDFileManager.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -17,34 +17,50 @@ typedef NS_ENUM( NSInteger, TPViewport ) {
     TPViewportBottom
 };
 
-static const AVCaptureDevicePosition TPViewportTopCamera = AVCaptureDevicePositionBack;
-static const AVCaptureDevicePosition TPViewportBottomCamera = AVCaptureDevicePositionFront;
-static const TPViewport TPRecordFirstViewport = TPViewportTop;
-static const TPViewport TPRecordSecondViewport = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval = 3;
-static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
+typedef NS_ENUM( NSInteger, TPRecording ) {
+    TPRecordingIdle,
+    TPRecordingFirst,
+    TPRecordingFirstFinished,
+    TPRecordingFirstFailed,
+    TPRecordingSecond,
+    TPRecordingSecondFinished,
+    TPRecordingSecondFailed,
+    TPRecordingComplete
+};
 
-@interface ViewController () <AVCaptureFileOutputRecordingDelegate>
+// Constants
+static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionBack;
+static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
+static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
+static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
+static const NSTimeInterval TPRecordFirstInterval               = 3;
+static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
+static const NSInteger TPEncodeWidth                            = 376;
+static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
+// Constants
 
-@property (nonatomic) UIButton *recordButton;
-@property (nonatomic) UIView *topView;
-@property (nonatomic) UIView *bottomView;
-@property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
+@interface ViewController () <IDCaptureSessionCoordinatorDelegate>
 
-// Session management.
-@property (nonatomic) dispatch_queue_t sessionQueue;
-@property (nonatomic) AVCaptureSession *session;
-@property (nonatomic) AVCaptureDeviceInput *videoDeviceInput;
-@property (nonatomic) AVCaptureMovieFileOutput *movieFileOutput;
-
-// Utilities.
 @property (nonatomic) TPCameraSetupResult setupResult;
-@property (nonatomic, getter=isSessionRunning) BOOL sessionRunning;
-@property (nonatomic) UIBackgroundTaskIdentifier backgroundRecordingID;
+@property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
+
+@property (nonatomic) TPRecording recordingStatus;
+@property (nonatomic) UIButton *recordButton;
+@property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
+@property (nonatomic) AVPlayer *firstPlayer;
+@property (nonatomic) AVPlayer *secondPlayer;
+@property (nonatomic) AVPlayerLayer *firstPlayerLayer;
+@property (nonatomic) AVPlayerLayer *secondPlayerLayer;
+@property (nonatomic) NSURL *firstVideoURL;
+@property (nonatomic) NSURL *secondVideoURL;
 
 @end
 
 @implementation ViewController
+{
+    CGRect topViewportRect;
+    CGRect bottomViewportRect;
+}
 
 - (BOOL)prefersStatusBarHidden {
     return YES;
@@ -53,32 +69,51 @@ static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    // Create the AV session
-    self.session = [[AVCaptureSession alloc] init];
-    //self.session.sessionPreset = AVCaptureSessionPresetPhoto;
+    // Check camera access
+    [self checkCameraAuth];
     
-    // Create the AV session queue
-    self.sessionQueue = dispatch_queue_create( "session queue", DISPATCH_QUEUE_SERIAL );
+    // Create the session coordinator
+    AVCaptureDevicePosition initialDevicePosition;
+    switch (TPRecordFirstViewport)
+    {
+        case TPViewportTop:
+        {
+            initialDevicePosition = TPViewportTopCamera;
+            break;
+        }
+        case TPViewportBottom:
+        {
+            initialDevicePosition = TPViewportBottomCamera;
+            break;
+        }
+    }
+    _sessionCoordinator = [[IDCaptureSessionAssetWriterCoordinator alloc] initWithDevicePosition:initialDevicePosition];
+    [_sessionCoordinator setDelegate:self callbackQueue:dispatch_get_main_queue()];
     
     // Create the preview
-    self.previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:self.session];
-    self.previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    _previewLayer = _sessionCoordinator.previewLayer;
+    _previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
-    // Top View
+    // Create the players
+    _firstPlayer = [[AVPlayer alloc] init];
+    _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
+    _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    _secondPlayer = [[AVPlayer alloc] init];
+    _secondPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_secondPlayer];
+    _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    
+    // Calculate Viewports
     int topViewW = self.view.frame.size.width;
     int topViewH = floor(self.view.frame.size.height / 2.0);
     int topViewX = 0;
     int topViewY = 0;
-    _topView = [[UIView alloc] initWithFrame:CGRectMake(topViewX, topViewY, topViewW, topViewH)];
-    [_topView setBackgroundColor:[UIColor greenColor]];
+    topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
     
-    // Buttom View
     int bottomViewW = self.view.frame.size.width;
     int bottomViewH = ceil(self.view.frame.size.height / 2.0);
     int bottomViewX = 0;
     int bottomViewY = floor(self.view.frame.size.height / 2.0);
-    _bottomView = [[UIView alloc] initWithFrame:CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH)];
-    [_bottomView setBackgroundColor:[UIColor blackColor]];
+    bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
     // Record Button
     int recordButtonW = 44;
@@ -92,74 +127,58 @@ static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
     _recordButton.clipsToBounds = YES;
     [_recordButton setImage:[UIImage imageNamed:@"record.png"] forState:UIControlStateNormal];
     [_recordButton addTarget:self action:@selector(didTapRecord:) forControlEvents:UIControlEventTouchUpInside];
-    _recordButton.enabled = NO; // Not enabled until AV session is running
-    
-    // Add views
-    [self.view addSubview:_bottomView];
-    [self.view addSubview:_topView];
+    _recordButton.enabled = NO; // Not enabled until session is running (in coordinator delegate)
     [self.view addSubview:_recordButton];
     
-    // Check camera access
-    [self checkCameraStatus];
+    // Players
+    [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
+    [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
+    [self.view.layer insertSublayer:_secondPlayerLayer atIndex:1];
+    [self moveLayer:_secondPlayerLayer to:TPRecordSecondViewport];
     
-    // Initialize session and preview
-    dispatch_async( self.sessionQueue, ^{
-        [self initSession];
-        dispatch_async( dispatch_get_main_queue(), ^{
-            [self initPreview];
-        } );
-    });
+    // Preview
+    [self.view.layer insertSublayer:_previewLayer atIndex:2];
+    [self moveLayer:_previewLayer to:TPRecordFirstViewport];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
     
-    dispatch_async( self.sessionQueue, ^{
-        switch ( self.setupResult )
+    switch ( _setupResult )
+    {
+        case TPCameraSetupResultSuccess:
         {
-            case TPCameraSetupResultSuccess:
-            {
-                // Only setup observers and start the session running if setup succeeded.
-                [self addObservers];
-                [self.session startRunning];
-                self.sessionRunning = self.session.isRunning;
-                break;
-            }
-            case TPCameraSetupResultCameraNotAuthorized:
-            {
-                dispatch_async( dispatch_get_main_queue(), ^{
-                    [self showCameraPermissionErrorDialog];
-                } );
-                break;
-            }
-            case TPCameraSetupResultSessionConfigurationFailed:
-            {
-                dispatch_async( dispatch_get_main_queue(), ^{
-                    [self showCameraCaptureErrorDialog];
-                } );
-                break;
-            }
+            // Only start the session running if setup succeeded
+            [_sessionCoordinator startRunning];
+            break;
         }
-    } );
+        case TPCameraSetupResultCameraNotAuthorized:
+        {
+            [self showCameraPermissionErrorDialog];
+            break;
+        }
+        case TPCameraSetupResultSessionConfigurationFailed:
+        {
+            [self showCameraCaptureErrorDialog];
+            break;
+        }
+    }
 }
 
 - (void)viewDidDisappear:(BOOL)animated
 {
-    dispatch_async( self.sessionQueue, ^{
-        if ( self.setupResult == TPCameraSetupResultSuccess ) {
-            [self.session stopRunning];
-            [self removeObservers];
-        }
-    } );
+    if ( _setupResult == TPCameraSetupResultSuccess ) {
+        [_sessionCoordinator stopRunning];
+    }
     
     [super viewDidDisappear:animated];
 }
 
--(void)checkCameraStatus
+-(void)checkCameraAuth
 {
     // Assume we have camera permission
-    self.setupResult = TPCameraSetupResultSuccess;
+    _setupResult = TPCameraSetupResultSuccess;
     
     // Check video permission status. Video access is required and audio access is optional.
     // If audio access is denied, audio is not recorded during movie recording.
@@ -172,116 +191,17 @@ static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
         }
         case AVAuthorizationStatusNotDetermined:
         {
-            // The user has not yet been presented with the option to grant video access.
-            // We suspend the session queue to delay session setup until the access request has completed to avoid
-            // asking the user for audio access if video access is denied.
-            // Note that audio access will be implicitly requested when we create an AVCaptureDeviceInput for audio during session setup.
-            dispatch_suspend( self.sessionQueue );
             [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^( BOOL granted ) {
                 if ( ! granted ) {
-                    self.setupResult = TPCameraSetupResultCameraNotAuthorized;
+                    _setupResult = TPCameraSetupResultCameraNotAuthorized;
                 }
-                dispatch_resume( self.sessionQueue );
             }];
             break;
         }
         default:
         {
             // The user has previously denied access.
-            self.setupResult = TPCameraSetupResultCameraNotAuthorized;
-            break;
-        }
-    }
-
-}
-
--(void)initSession
-{
-    if ( self.setupResult != TPCameraSetupResultSuccess ) {
-        return;
-    }
-    
-    self.backgroundRecordingID = UIBackgroundTaskInvalid;
-    NSError *error = nil;
-    
-    AVCaptureDevicePosition initialCamera;
-    
-    switch (TPRecordFirstViewport)
-    {
-        case TPViewportTop:
-        {
-            initialCamera = TPViewportTopCamera;
-            break;
-        }
-        case TPViewportBottom:
-        {
-            initialCamera = TPViewportBottomCamera;
-            break;
-        }
-    }
-    
-    AVCaptureDevice *videoDevice = [ViewController deviceWithMediaType:AVMediaTypeVideo preferringPosition:initialCamera];
-    AVCaptureDeviceInput *videoDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
-    
-    if ( ! videoDeviceInput ) {
-        NSLog( @"Could not create video device input: %@", error );
-    }
-    
-    [self.session beginConfiguration];
-    
-    if ( [self.session canAddInput:videoDeviceInput] ) {
-        [ViewController setFlashMode:AVCaptureFlashModeOff forDevice:videoDevice];
-        [self.session addInput:videoDeviceInput];
-        self.videoDeviceInput = videoDeviceInput;
-    }
-    else {
-        NSLog( @"Could not add video device input to the session" );
-        self.setupResult = TPCameraSetupResultSessionConfigurationFailed;
-    }
-    
-    AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
-    AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
-    
-    if ( ! audioDeviceInput ) {
-        NSLog( @"Could not create audio device input: %@", error );
-    }
-    
-    if ( [self.session canAddInput:audioDeviceInput] ) {
-        [self.session addInput:audioDeviceInput];
-    }
-    else {
-        NSLog( @"Could not add audio device input to the session" );
-    }
-    
-    AVCaptureMovieFileOutput *movieFileOutput = [[AVCaptureMovieFileOutput alloc] init];
-    if ( [self.session canAddOutput:movieFileOutput] ) {
-        [self.session addOutput:movieFileOutput];
-        AVCaptureConnection *connection = [movieFileOutput connectionWithMediaType:AVMediaTypeVideo];
-        if ( connection.isVideoStabilizationSupported ) {
-            connection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeOff;
-        }
-        self.movieFileOutput = movieFileOutput;
-    }
-    else {
-        NSLog( @"Could not add movie file output to the session" );
-        self.setupResult = TPCameraSetupResultSessionConfigurationFailed;
-    }
-    
-    [self.session commitConfiguration];
-}
-
-- (void)initPreview
-{
-    switch (TPRecordFirstViewport)
-    {
-        case TPViewportTop:
-        {
-            [self movePreview:self.topView];
-            break;
-        }
-        case TPViewportBottom:
-        {
-            [self movePreview:self.bottomView];
+            _setupResult = TPCameraSetupResultCameraNotAuthorized;
             break;
         }
     }
@@ -289,348 +209,163 @@ static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
 
 - (void)updateViewport:(TPViewport)viewport
 {
-    AVCaptureDevicePosition camera;
-    
+    AVCaptureDevicePosition targetCamera;
     switch (viewport)
     {
         case TPViewportTop:
         {
-            camera = TPViewportTopCamera;
-            [self movePreview:self.topView];
+            targetCamera = TPViewportTopCamera;
             break;
         }
         case TPViewportBottom:
         {
-            camera = TPViewportBottomCamera;
-            [self movePreview:self.bottomView];
+            targetCamera = TPViewportBottomCamera;
             break;
         }
     }
-    
-    dispatch_async(self.sessionQueue, ^{
-        [self updateSession:camera];
-        dispatch_async( dispatch_get_main_queue(), ^{
-            // TODO: Update UI
-        } );
-    });
+    [_sessionCoordinator setDevicePosition:targetCamera];
+    [self moveLayer:_previewLayer to:viewport];
 }
 
--(void)updateSession:(AVCaptureDevicePosition)camera
+- (void)moveLayer:(CALayer*)layer to:(TPViewport)viewport
 {
-    AVCaptureDevice *videoDevice = [ViewController deviceWithMediaType:AVMediaTypeVideo preferringPosition:camera];
-    AVCaptureDeviceInput *videoDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:nil];
-    
-    [self.session beginConfiguration];
-    
-    // Remove the existing device input first
-    [self.session removeInput:self.videoDeviceInput];
-    
-    if ( [self.session canAddInput:videoDeviceInput] ) {
-        [ViewController setFlashMode:AVCaptureFlashModeOff forDevice:videoDevice];
-        [self.session addInput:videoDeviceInput];
-        self.videoDeviceInput = videoDeviceInput;
+    CGRect targetFrame;
+    switch (viewport)
+    {
+        case TPViewportTop:
+        {
+            targetFrame = topViewportRect;
+            break;
+        }
+        case TPViewportBottom:
+        {
+            targetFrame = bottomViewportRect;
+            break;
+        }
     }
-    else {
-        [self.session addInput:self.videoDeviceInput];
-    }
-    
-    AVCaptureConnection *connection = [self.movieFileOutput connectionWithMediaType:AVMediaTypeVideo];
-    if ( connection.isVideoStabilizationSupported ) {
-        connection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeOff;
-    }
-    if ( connection.isVideoMirroringSupported ) {
-        connection.videoMirrored = TRUE;
-    }
-    
-    [self.session commitConfiguration];
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    [layer setFrame:targetFrame];
+    [CATransaction commit];
 }
-
-- (void)movePreview:(UIView*)theView
-{
-    [self.previewLayer removeFromSuperlayer];
-    self.previewLayer.frame = theView.bounds;
-    [theView.layer addSublayer:self.previewLayer];
-}
-
 
 -(void)didTapRecord:(id)button
 {
-    [self record:TPRecordFirstViewport];
+    [self transitionToRecordingStatus:TPRecordingFirst];
 }
 
--(void)record:(TPViewport)viewport
+-(void)transitionToRecordingStatus:(TPRecording)newStatus
 {
-    switch (viewport)
-    {
-        case TPRecordFirstViewport:
-        {
-            self.recordButton.hidden = YES;
-            [self startRecording];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordFirstInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-                [self stopRecording];
-                [self record:TPViewportBottom];
-            });
-            break;
-        }
-        case TPRecordSecondViewport:
-        {
-            [self updateViewport:viewport];
-            [self startRecording];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordSecondInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-                [self stopRecording];
-                self.recordButton.hidden = NO;
-            });
-            break;
-        }
-    }
-}
-
--(void)startRecording
-{
-    dispatch_async( self.sessionQueue, ^{
-        if ( ! self.movieFileOutput.isRecording ) {
-            if ( [UIDevice currentDevice].isMultitaskingSupported ) {
-                // Setup background task. This is needed because the -[captureOutput:didFinishRecordingToOutputFileAtURL:fromConnections:error:]
-                // callback is not received until AVCam returns to the foreground unless you request background execution time.
-                // This also ensures that there will be time to write the file to the photo library when AVCam is backgrounded.
-                // To conclude this background execution, -endBackgroundTask is called in
-                // -[captureOutput:didFinishRecordingToOutputFileAtURL:fromConnections:error:] after the recorded file has been saved.
-                self.backgroundRecordingID = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:nil];
-            }
-            // Start recording to a temporary file.
-            NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
-            NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
-            [self.movieFileOutput startRecordingToOutputFileURL:[NSURL fileURLWithPath:outputFilePath] recordingDelegate:self];
-        }
-    } );
-}
-
--(void)stopRecording
-{
-    dispatch_async( self.sessionQueue, ^{
-        if (self.movieFileOutput.isRecording) {
-            [self.movieFileOutput stopRecording];
-        }
-    });
-}
-
-#pragma mark KVO and Notifications
-
-- (void)addObservers
-{
-    [self.session addObserver:self forKeyPath:@"running" options:NSKeyValueObservingOptionNew context:SessionRunningContext];
+    TPRecording oldStatus = _recordingStatus;
+    _recordingStatus = newStatus;
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sessionRuntimeError:) name:AVCaptureSessionRuntimeErrorNotification object:self.session];
-    // A session can only run when the app is full screen. It will be interrupted in a multi-app layout, introduced in iOS 9,
-    // see also the documentation of AVCaptureSessionInterruptionReason. Add observers to handle these session interruptions
-    // and show a preview is paused message. See the documentation of AVCaptureSessionWasInterruptedNotification for other
-    // interruption reasons.
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sessionWasInterrupted:) name:AVCaptureSessionWasInterruptedNotification object:self.session];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sessionInterruptionEnded:) name:AVCaptureSessionInterruptionEndedNotification object:self.session];
-}
-
-- (void)removeObservers
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-    [self.session removeObserver:self forKeyPath:@"running" context:SessionRunningContext];
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
-{
-    if ( context == SessionRunningContext ) {
-        BOOL isSessionRunning = [change[NSKeyValueChangeNewKey] boolValue];
-        
-        dispatch_async( dispatch_get_main_queue(), ^{
-            // Only enable the ability to change camera if the device has more than one camera.
-            // self.cameraButton.enabled = isSessionRunning && ( [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo].count > 1 );
-            _recordButton.enabled = isSessionRunning;
-            // self.stillButton.enabled = isSessionRunning;
-        } );
-    }
-    else {
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-    }
-}
-
-- (void)sessionRuntimeError:(NSNotification *)notification
-{
-    NSError *error = notification.userInfo[AVCaptureSessionErrorKey];
-    NSLog( @"Capture session runtime error: %@", error );
+    NSLog(@"%ld --> %ld", oldStatus, newStatus);
     
-    // Automatically try to restart the session running if media services were reset and the last start running succeeded.
-    // Otherwise, enable the user to try to resume the session running.
-    if ( error.code == AVErrorMediaServicesWereReset ) {
-        dispatch_async( self.sessionQueue, ^{
-            if ( self.isSessionRunning ) {
-                [self.session startRunning];
-                self.sessionRunning = self.session.isRunning;
-            }
-            else {
-                dispatch_async( dispatch_get_main_queue(), ^{
-                    // self.resumeButton.hidden = NO;
-                } );
-            }
-        } );
-    }
-    else {
-        // self.resumeButton.hidden = NO;
-    }
-}
-
-- (void)sessionWasInterrupted:(NSNotification *)notification
-{
-    // In some scenarios we want to enable the user to resume the session running.
-    // For example, if music playback is initiated via control center while using AVCam,
-    // then the user can let AVCam resume the session running, which will stop music playback.
-    // Note that stopping music playback in control center will not automatically resume the session running.
-    // Also note that it is not always possible to resume, see -[resumeInterruptedSession:].
-    BOOL showResumeButton = NO;
-    
-    // In iOS 9 and later, the userInfo dictionary contains information on why the session was interrupted.
-    AVCaptureSessionInterruptionReason reason = [notification.userInfo[AVCaptureSessionInterruptionReasonKey] integerValue];
-    NSLog( @"Capture session was interrupted with reason %ld", (long)reason );
-    
-    if ( reason == AVCaptureSessionInterruptionReasonAudioDeviceInUseByAnotherClient ||
-        reason == AVCaptureSessionInterruptionReasonVideoDeviceInUseByAnotherClient ) {
-        showResumeButton = YES;
-    }
-    else if ( reason == AVCaptureSessionInterruptionReasonVideoDeviceNotAvailableWithMultipleForegroundApps ) {
-        // Simply fade-in a label to inform the user that the camera is unavailable.
-        // self.cameraUnavailableLabel.hidden = NO;
-        // self.cameraUnavailableLabel.alpha = 0.0;
-        // [UIView animateWithDuration:0.25 animations:^{
-            // self.cameraUnavailableLabel.alpha = 1.0;
-        // }];
-    }
-    
-    if ( showResumeButton ) {
-        // Simply fade-in a button to enable the user to try to resume the session running.
-        // self.resumeButton.hidden = NO;
-        // self.resumeButton.alpha = 0.0;
-        // [UIView animateWithDuration:0.25 animations:^{
-            // self.resumeButton.alpha = 1.0;
-        // }];
-    }
-}
-
-- (void)sessionInterruptionEnded:(NSNotification *)notification
-{
-    NSLog( @"Capture session interruption ended" );
-    
-//    if ( ! self.resumeButton.hidden ) {
-//        [UIView animateWithDuration:0.25 animations:^{
-//            self.resumeButton.alpha = 0.0;
-//        } completion:^( BOOL finished ) {
-//            self.resumeButton.hidden = YES;
-//        }];
-//    }
-//    if ( ! self.cameraUnavailableLabel.hidden ) {
-//        [UIView animateWithDuration:0.25 animations:^{
-//            self.cameraUnavailableLabel.alpha = 0.0;
-//        } completion:^( BOOL finished ) {
-//            self.cameraUnavailableLabel.hidden = YES;
-//        }];
-//    }
-}
-
-#pragma mark File Output Recording Delegate
-
-- (void)captureOutput:(AVCaptureFileOutput *)captureOutput didStartRecordingToOutputFileAtURL:(NSURL *)fileURL fromConnections:(NSArray *)connections
-{
-    dispatch_async( dispatch_get_main_queue(), ^{
-        NSLog(@"Recording...");
-//        self.recordButton.enabled = YES;
-//        [self.recordButton setTitle:NSLocalizedString( @"Stop", @"Recording button stop title") forState:UIControlStateNormal];
-    });
-}
-
-- (void)captureOutput:(AVCaptureFileOutput *)captureOutput didFinishRecordingToOutputFileAtURL:(NSURL *)outputFileURL fromConnections:(NSArray *)connections error:(NSError *)error
-{
-    NSLog(@"STOPPED.");
-    // Note that currentBackgroundRecordingID is used to end the background task associated with this recording.
-    // This allows a new recording to be started, associated with a new UIBackgroundTaskIdentifier, once the movie file output's isRecording property
-    // is back to NO — which happens sometime after this method returns.
-    // Note: Since we use a unique file path for each recording, a new recording will not overwrite a recording currently being saved.
-    UIBackgroundTaskIdentifier currentBackgroundRecordingID = self.backgroundRecordingID;
-    self.backgroundRecordingID = UIBackgroundTaskInvalid;
-    
-    dispatch_block_t cleanup = ^{
-        [[NSFileManager defaultManager] removeItemAtURL:outputFileURL error:nil];
-        if ( currentBackgroundRecordingID != UIBackgroundTaskInvalid ) {
-            [[UIApplication sharedApplication] endBackgroundTask:currentBackgroundRecordingID];
-        }
+    dispatch_block_t halt = ^{
+        [self throwFatalTransitionErrorFrom:oldStatus to:newStatus];
     };
     
+    if (oldStatus != newStatus) {
+        if (newStatus == TPRecordingFirst) {
+            
+            if (oldStatus != TPRecordingIdle) {
+                halt();
+            } else {
+                [UIApplication sharedApplication].idleTimerDisabled = YES;
+                _recordButton.hidden = YES;
+                [_sessionCoordinator startRecording];
+                [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordFirstInterval];
+            }
+            
+        } else if (newStatus == TPRecordingFirstFinished) {
+            
+            if (oldStatus != TPRecordingFirst) {
+                halt();
+            } else {
+                [self transitionToRecordingStatus:TPRecordingSecond];
+            }
+            
+        } else if (newStatus == TPRecordingSecond) {
+            
+            if (oldStatus != TPRecordingFirstFinished) {
+                halt();
+            } else {
+                AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_firstVideoURL];
+                [_firstPlayer replaceCurrentItemWithPlayerItem:item];
+                [self updateViewport:TPRecordSecondViewport];
+                [_firstPlayer play];
+                [_sessionCoordinator startRecording];
+                [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordSecondInterval];
+            }
+            
+        } else if (newStatus == TPRecordingSecondFinished) {
+            
+            if (oldStatus != TPRecordingSecond) {
+                halt();
+            } else {
+                AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_secondVideoURL];
+                [_secondPlayer replaceCurrentItemWithPlayerItem:item];
+                [_secondPlayer play];
+                [_previewLayer removeFromSuperlayer];
+                [self transitionToRecordingStatus:TPRecordingComplete];
+            }
+            
+        } else if (newStatus == TPRecordingComplete) {
+            
+            if (oldStatus != TPRecordingSecondFinished) {
+                halt();
+            } else {
+                [UIApplication sharedApplication].idleTimerDisabled = NO;
+                [self transitionToRecordingStatus:TPRecordingIdle];
+            }
+        }
+    }
+}
+
+#pragma mark = IDCaptureSessionCoordinatorDelegate methods
+
+- (void)coordinatorSessionConfigurationDidFail:(IDCaptureSessionCoordinator *)coordinator
+{
+    _setupResult = TPCameraSetupResultSessionConfigurationFailed;
+}
+
+-(void)coordinatorSessionDidFinishStarting:(IDCaptureSessionCoordinator *)coordinator running:(BOOL)isRunning
+{
+    _recordButton.enabled = isRunning;
+}
+
+- (NSDictionary*)coordinatorDesiredVideoOutputSettings
+{
+    return [NSDictionary dictionaryWithObjectsAndKeys:
+            AVVideoCodecH264, AVVideoCodecKey,
+            [NSNumber numberWithInt:TPEncodeWidth], AVVideoWidthKey,
+            [NSNumber numberWithInt:TPEncodeHeight], AVVideoHeightKey,
+            AVVideoScalingModeResizeAspectFill,AVVideoScalingModeKey,
+            nil];
+}
+
+- (void)coordinatorDidBeginRecording:(IDCaptureSessionCoordinator *)coordinator
+{
+}
+
+- (void)coordinator:(IDCaptureSessionCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
+{
     BOOL success = YES;
-    
     if ( error ) {
         NSLog( @"Movie file finishing error: %@", error );
         success = [error.userInfo[AVErrorRecordingSuccessfullyFinishedKey] boolValue];
     }
     if ( success ) {
-        // Check authorization status.
-        [PHPhotoLibrary requestAuthorization:^( PHAuthorizationStatus status ) {
-            if ( status == PHAuthorizationStatusAuthorized ) {
-                // Save the movie file to the photo library and cleanup.
-                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                    // In iOS 9 and later, it's possible to move the file into the photo library without duplicating the file data.
-                    // This avoids using double the disk space during save, which can make a difference on devices with limited free disk space.
-                    if ( [PHAssetResourceCreationOptions class] ) {
-                        PHAssetResourceCreationOptions *options = [[PHAssetResourceCreationOptions alloc] init];
-                        options.shouldMoveFile = YES;
-                        PHAssetCreationRequest *changeRequest = [PHAssetCreationRequest creationRequestForAsset];
-                        [changeRequest addResourceWithType:PHAssetResourceTypeVideo fileURL:outputFileURL options:options];
-                    }
-                    else {
-                        [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:outputFileURL];
-                    }
-                } completionHandler:^( BOOL success, NSError *error ) {
-                    if ( ! success ) {
-                        NSLog( @"Could not save movie to photo library: %@", error );
-                    }
-                    cleanup();
-                }];
-            }
-            else {
-                cleanup();
-            }
-        }];
-    }
-    else {
-        cleanup();
-    }
-    
-    dispatch_async( dispatch_get_main_queue(), ^{
-        self.recordButton.hidden = NO;
-    });
-}
-
-#pragma mark Actions
-
-- (IBAction)resumeInterruptedSession:(id)sender
-{
-    dispatch_async( self.sessionQueue, ^{
-        // The session might fail to start running, e.g., if a phone or FaceTime call is still using audio or video.
-        // A failure to start the session running will be communicated via a session runtime error notification.
-        // To avoid repeatedly failing to start the session running, we only try to restart the session running in the
-        // session runtime error handler if we aren't trying to resume the session running.
-        [self.session startRunning];
-        self.sessionRunning = self.session.isRunning;
-        if ( ! self.session.isRunning ) {
-            dispatch_async( dispatch_get_main_queue(), ^{
-                NSString *message = @"Unable to resume";
-                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Session Error" message:message preferredStyle:UIAlertControllerStyleAlert];
-                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil];
-                [alertController addAction:cancelAction];
-                [self presentViewController:alertController animated:YES completion:nil];
-            } );
+        if (_recordingStatus == TPRecordingFirst) {
+            _firstVideoURL = outputFileURL;
+            [self saveToPhotoRoll:_firstVideoURL];
+            [self transitionToRecordingStatus:TPRecordingFirstFinished];
+        } else if (_recordingStatus == TPRecordingSecond) {
+            _secondVideoURL = outputFileURL;
+            [self saveToPhotoRoll:_secondVideoURL];
+            [self transitionToRecordingStatus:TPRecordingSecondFinished];
         }
-        else {
-            dispatch_async( dispatch_get_main_queue(), ^{
-                // self.resumeButton.hidden = YES;
-            } );
-        }
-    } );
+    }
 }
 
 #pragma mark Helpers
@@ -658,33 +393,29 @@ static const NSTimeInterval TPRecordSecondInterval = TPRecordFirstInterval;
     [self presentViewController:alertController animated:YES completion:nil];
 }
 
-+ (AVCaptureDevice *)deviceWithMediaType:(NSString *)mediaType preferringPosition:(AVCaptureDevicePosition)position
+-(void)throwFatalTransitionErrorFrom:(TPRecording)t1 to:(TPRecording)t2
 {
-    NSArray *devices = [AVCaptureDevice devicesWithMediaType:mediaType];
-    AVCaptureDevice *captureDevice = devices.firstObject;
-    
-    for ( AVCaptureDevice *device in devices ) {
-        if ( device.position == position ) {
-            captureDevice = device;
-            break;
-        }
-    }
-    
-    return captureDevice;
+    @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                   reason:[NSString stringWithFormat:@"Tried to transition from %ld to %ld", (long)t1, t2]
+                                 userInfo:nil];
+    return;
 }
 
-+ (void)setFlashMode:(AVCaptureFlashMode)flashMode forDevice:(AVCaptureDevice *)device
+-(void)saveToPhotoRoll:(NSURL*)outputFileURL
 {
-    if ( device.hasFlash && [device isFlashModeSupported:flashMode] ) {
-        NSError *error = nil;
-        if ( [device lockForConfiguration:&error] ) {
-            device.flashMode = flashMode;
-            [device unlockForConfiguration];
+    // Check authorization status.
+    [PHPhotoLibrary requestAuthorization:^( PHAuthorizationStatus status ) {
+        if ( status == PHAuthorizationStatusAuthorized ) {
+            // Save the movie file to the photo library and cleanup.
+            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:outputFileURL];
+            } completionHandler:^( BOOL success, NSError *error ) {
+                if ( ! success ) {
+                    NSLog( @"Could not save movie to photo library: %@", error );
+                }
+            }];
         }
-        else {
-            NSLog( @"Could not lock device for configuration: %@", error );
-        }
-    }
+    }];
 }
 
 @end
