@@ -7,10 +7,7 @@
 //
 
 #import "IDCaptureSessionAssetWriterCoordinator.h"
-
-#import <MobileCoreServices/MobileCoreServices.h>
 #import "IDAssetWriterCoordinator.h"
-#import "IDFileManager.h"
 
 static void * SessionRunningContext = &SessionRunningContext;
 
@@ -147,8 +144,9 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         _audioCompressionSettings = [[self delegate] coordinatorDesiredAudioOutputSettings];
     }
     
-    IDFileManager *fm = [IDFileManager new];
-    _recordingURL = [fm tempFileURL];
+    NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
+    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
+    _recordingURL = [NSURL fileURLWithPath:outputFilePath];
 
     self.assetWriterCoordinator = [[IDAssetWriterCoordinator alloc] initWithURL:_recordingURL];
     if(_outputAudioFormatDescription != nil){

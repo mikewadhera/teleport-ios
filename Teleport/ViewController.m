@@ -4,7 +4,6 @@
 
 #import "ViewController.h"
 #import "IDCaptureSessionAssetWriterCoordinator.h"
-#import "IDFileManager.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
