@@ -12,4 +12,6 @@
 
 @interface IDCaptureSessionAssetWriterCoordinator : IDCaptureSessionCoordinator
 
+-(void)setDevicePosition:(AVCaptureDevicePosition)devicePosition;
+
 @end

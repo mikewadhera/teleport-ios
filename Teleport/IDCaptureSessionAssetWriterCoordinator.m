@@ -49,6 +49,8 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 @implementation IDCaptureSessionAssetWriterCoordinator
 
+@synthesize devicePosition = _devicePosition;
+
 - (instancetype)initWithDevicePosition:(AVCaptureDevicePosition)position
 {
     self = [super initWithDevicePosition:position];
@@ -103,6 +105,65 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     [self.assetWriterCoordinator finishRecording]; // asynchronous, will call us back with
 }
+
+-(void)setDevicePosition:(AVCaptureDevicePosition)devicePosition
+{
+    if (devicePosition == self.devicePosition) {
+        return;
+    }
+    
+    AVCaptureDevicePosition previousDevicePosition = self.devicePosition;
+    _devicePosition = devicePosition;
+    
+    // Inputs
+    
+    AVCaptureDevice *videoDevice = [IDCaptureSessionCoordinator deviceWithMediaType:AVMediaTypeVideo preferringPosition:devicePosition];
+    AVCaptureDeviceInput *videoDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:nil];
+    
+    [self.captureSession beginConfiguration];
+    
+    // Remove the existing device input first
+    [self.captureSession removeInput:self.cameraDeviceInput];
+    [self.captureSession removeInput:self.audioDeviceInput];
+    
+    if ( [self.captureSession canAddInput:videoDeviceInput] ) {
+        [IDCaptureSessionCoordinator setFlashMode:AVCaptureFlashModeOff forDevice:videoDevice];
+        [self.captureSession addInput:videoDeviceInput];
+        
+        self.cameraDeviceInput = videoDeviceInput;
+    }
+    else {
+        self.devicePosition = previousDevicePosition;
+        [self.captureSession addInput:self.cameraDeviceInput];
+        NSLog(@"failed to set device position: %ld", (long)devicePosition);
+    }
+    
+    NSError *error;
+    AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+    AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
+    
+    if ( ! audioDeviceInput ) {
+        NSLog( @"Could not create audio device input: %@", error );
+    }
+    
+    if ( [self.captureSession canAddInput:audioDeviceInput] ) {
+        [self.captureSession addInput:audioDeviceInput];
+        self.audioDeviceInput = audioDeviceInput;
+    }
+    else {
+        NSLog( @"Could not add audio device input to the session" );
+    }
+    
+    // Outputs
+    
+    [self.captureSession removeOutput:self.videoDataOutput];
+    [self.captureSession removeOutput:self.audioDataOutput];
+    
+    [self addDataOutputsToCaptureSession:self.captureSession];
+    
+    [self.captureSession commitConfiguration];
+}
+
 
 #pragma mark - Private methods
 

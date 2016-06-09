@@ -13,6 +13,7 @@
 
 @interface IDCaptureSessionCoordinator : NSObject
 
+@property (nonatomic, assign, readonly) AVCaptureDevicePosition devicePosition;
 @property (nonatomic, strong) AVCaptureSession *captureSession;
 @property (nonatomic, strong) AVCaptureDeviceInput *cameraDeviceInput;
 @property (nonatomic, strong) AVCaptureDeviceInput *audioDeviceInput;
@@ -24,8 +25,6 @@
 
 - (void)setDelegate:(id<IDCaptureSessionCoordinatorDelegate>)delegate callbackQueue:(dispatch_queue_t)delegateCallbackQueue;
 
--(void)setDevicePosition:(AVCaptureDevicePosition)devicePosition;
-
 - (BOOL)addOutput:(AVCaptureOutput *)output toCaptureSession:(AVCaptureSession *)captureSession;
 
 - (void)startRunning;
@@ -35,6 +34,9 @@
 - (void)stopRecording;
 
 - (AVCaptureVideoPreviewLayer *)previewLayer;
+
++ (AVCaptureDevice *)deviceWithMediaType:(NSString *)mediaType preferringPosition:(AVCaptureDevicePosition)position;
++ (void)setFlashMode:(AVCaptureFlashMode)flashMode forDevice:(AVCaptureDevice *)device;
 
 @end
 

@@ -14,11 +14,12 @@ static void * SessionRunningContext = &SessionRunningContext;
 
 @property (nonatomic, strong) dispatch_queue_t sessionQueue;
 @property (nonatomic, strong) AVCaptureVideoPreviewLayer *previewLayer;
-@property (nonatomic, readonly) AVCaptureDevicePosition devicePosition;
 
 @end
 
 @implementation IDCaptureSessionCoordinator
+
+@synthesize devicePosition = _devicePosition;
 
 - (instancetype)initWithDevicePosition:(AVCaptureDevicePosition)position
 {
@@ -96,7 +97,7 @@ static void * SessionRunningContext = &SessionRunningContext;
 {
     AVCaptureSession *captureSession = [AVCaptureSession new];
     
-    AVCaptureDevice *videoDevice = [[self class] deviceWithMediaType:AVMediaTypeVideo preferringPosition:_devicePosition];
+    AVCaptureDevice *videoDevice = [[self class] deviceWithMediaType:AVMediaTypeVideo preferringPosition:self.devicePosition];
     
     NSError *error;
     AVCaptureDeviceInput *videoDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
@@ -137,55 +138,6 @@ static void * SessionRunningContext = &SessionRunningContext;
     [captureSession commitConfiguration];
     
     return captureSession;
-}
-
--(void)setDevicePosition:(AVCaptureDevicePosition)devicePosition
-{
-    if (devicePosition == _devicePosition) {
-        return;
-    }
-    
-    AVCaptureDevicePosition previousDevicePosition = _devicePosition;
-    _devicePosition = devicePosition;
-    
-    AVCaptureDevice *videoDevice = [[self class] deviceWithMediaType:AVMediaTypeVideo preferringPosition:devicePosition];
-    AVCaptureDeviceInput *videoDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:nil];
-    
-    [_captureSession beginConfiguration];
-    
-    // Remove the existing device input first
-    [_captureSession removeInput:self.cameraDeviceInput];
-    [_captureSession removeInput:self.audioDeviceInput];
-    
-    if ( [_captureSession canAddInput:videoDeviceInput] ) {
-        [[self class] setFlashMode:AVCaptureFlashModeOff forDevice:videoDevice];
-        [_captureSession addInput:videoDeviceInput];
-        
-        self.cameraDeviceInput = videoDeviceInput;
-    }
-    else {
-        _devicePosition = previousDevicePosition;
-        [_captureSession addInput:self.cameraDeviceInput];
-        NSLog(@"failed to set device position: %ld", (long)devicePosition);
-    }
-    
-    NSError *error;
-    AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
-    AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
-    
-    if ( ! audioDeviceInput ) {
-        NSLog( @"Could not create audio device input: %@", error );
-    }
-    
-    if ( [_captureSession canAddInput:audioDeviceInput] ) {
-        [_captureSession addInput:audioDeviceInput];
-        self.audioDeviceInput = audioDeviceInput;
-    }
-    else {
-        NSLog( @"Could not add audio device input to the session" );
-    }
-    
-    [_captureSession commitConfiguration];
 }
 
 - (BOOL)addOutput:(AVCaptureOutput *)output toCaptureSession:(AVCaptureSession *)captureSession
