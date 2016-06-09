@@ -1,6 +1,5 @@
 
 @import AVFoundation;
-@import Photos;
 
 #import "ViewController.h"
 #import "IDCaptureSessionAssetWriterCoordinator.h"
@@ -357,11 +356,9 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     if ( success ) {
         if (_recordingStatus == TPRecordingFirst) {
             _firstVideoURL = outputFileURL;
-            [self saveToPhotoRoll:_firstVideoURL];
             [self transitionToRecordingStatus:TPRecordingFirstFinished];
         } else if (_recordingStatus == TPRecordingSecond) {
             _secondVideoURL = outputFileURL;
-            [self saveToPhotoRoll:_secondVideoURL];
             [self transitionToRecordingStatus:TPRecordingSecondFinished];
         }
     }
@@ -398,23 +395,6 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
                                    reason:[NSString stringWithFormat:@"Tried to transition from %ld to %ld", (long)t1, t2]
                                  userInfo:nil];
     return;
-}
-
--(void)saveToPhotoRoll:(NSURL*)outputFileURL
-{
-    // Check authorization status.
-    [PHPhotoLibrary requestAuthorization:^( PHAuthorizationStatus status ) {
-        if ( status == PHAuthorizationStatusAuthorized ) {
-            // Save the movie file to the photo library and cleanup.
-            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:outputFileURL];
-            } completionHandler:^( BOOL success, NSError *error ) {
-                if ( ! success ) {
-                    NSLog( @"Could not save movie to photo library: %@", error );
-                }
-            }];
-        }
-    }];
 }
 
 @end
