@@ -22,25 +22,31 @@ typedef NS_ENUM( NSInteger, TPState ) {
     TPStateSessionConfigurationFailed,
     TPStateRecordingIdle,
     TPStateRecordingStarted,
-    TPStateRecordingFirst,
-    TPStateRecordingFirstFinished,
-    TPStateRecordingFirstFailed,
-    TPStateRecordingSecond,
-    TPStateRecordingSecondFinished,
-    TPStateRecordingSecondFailed,
+    TPStateRecordingFirstStarting,
+    TPStateRecordingFirstStarted,
+    TPStateRecordingFirstCompleting,
+    TPStateRecordingFirstCompleted,
+    TPStateRecordingSecondStarting,
+    TPStateRecordingSecondStarted,
+    TPStateRecordingSecondCompleting,
+    TPStateRecordingSecondCompleted,
     TPStateRecordingCompleted
 };
 typedef void (^ AssertFromBlock)(TPState);
+
+// For debugging
+#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
 // Constants
 static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionBack;
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 3;
+static const NSTimeInterval TPRecordFirstInterval               = 7;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
+static const CGFloat TPProgressBarWidth                         = 12.0f;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -52,11 +58,10 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 @property (nonatomic) UIButton *recordButton;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
 @property (nonatomic) AVPlayer *firstPlayer;
-@property (nonatomic) AVPlayer *secondPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
-@property (nonatomic) AVPlayerLayer *secondPlayerLayer;
 @property (nonatomic) NSURL *firstVideoURL;
 @property (nonatomic) NSURL *secondVideoURL;
+@property (nonatomic) CAShapeLayer *progressBarLayer;
 
 @end
 
@@ -73,6 +78,8 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    [self.view setBackgroundColor:[UIColor blackColor]];
     
     // Check camera access
     [self checkCameraAuth];
@@ -99,17 +106,14 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     _previewLayer = _sessionCoordinator.previewLayer;
     _previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
-    // Create the players
+    // Create the player
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    _secondPlayer = [[AVPlayer alloc] init];
-    _secondPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_secondPlayer];
-    _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
     // Calculate Viewports
     int topViewW = self.view.frame.size.width;
-    int topViewH = floor(self.view.frame.size.height / 2.0);
+    int topViewH = ceil(self.view.frame.size.height / 2.0);
     int topViewX = 0;
     int topViewY = 0;
     topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
@@ -134,15 +138,22 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     [_recordButton addTarget:self action:@selector(didTapRecord:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_recordButton];
     
-    // Players
+    // Player
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
     [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
-    [self.view.layer insertSublayer:_secondPlayerLayer atIndex:1];
-    [self moveLayer:_secondPlayerLayer to:TPRecordSecondViewport];
     
     // Preview
-    [self.view.layer insertSublayer:_previewLayer atIndex:2];
+    [_previewLayer setBackgroundColor:[[UIColor blackColor] CGColor]];
+    [self.view.layer insertSublayer:_previewLayer atIndex:1];
     [self moveLayer:_previewLayer to:TPRecordFirstViewport];
+    
+    // Progress
+    _progressBarLayer = [CAShapeLayer layer];
+    [_progressBarLayer setStrokeColor:[UIColor redColor].CGColor];
+    [_progressBarLayer setLineWidth:TPProgressBarWidth];
+    [_progressBarLayer setFillColor:[UIColor clearColor].CGColor];
+    UIBezierPath *path = [UIBezierPath bezierPathWithRect:self.view.bounds];
+    _progressBarLayer.path = path.CGPath;
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -233,7 +244,7 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 
 -(void)didTapRecord:(id)button
 {
-    [self transitionToStatus:TPStateRecordingFirst];
+    [self transitionToStatus:TPStateRecordingFirstStarting];
 }
 
 -(void)transitionToStatus:(TPState)newStatus
@@ -241,13 +252,16 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     TPState oldStatus = _status;
     _status = newStatus;
     
-    NSLog(@"%ld --> %ld", oldStatus, newStatus);
+    //NSLog(@"%ld --> %ld", oldStatus, newStatus);
+    NSLog(@"%@", stateFor(newStatus));
     
     AssertFromBlock assertFrom = ^(TPState fromState) {
         if (oldStatus != fromState) {
             @throw [NSException exceptionWithName:NSInternalInconsistencyException
                                            reason:[NSString
-                                                   stringWithFormat:@"Unexpected transition: %ld to %ld", oldStatus, newStatus]
+                                                   stringWithFormat:@"Unexpected transition: %@ to %@",
+                                                   stateFor(oldStatus),
+                                                   stateFor(newStatus)]
                                          userInfo:nil];
         }
     };
@@ -260,9 +274,9 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
             
         } else if (newStatus == TPStateSessionStopping) {
             
+            [UIApplication sharedApplication].idleTimerDisabled = NO;
             _recordButton.enabled = NO;
             [_sessionCoordinator stopRunning];
-            
             
         } else if (newStatus == TPStateSessionConfigurationFailed) {
             
@@ -271,25 +285,36 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
         
         } else if (newStatus == TPStateSessionStarted) {
             
+            [UIApplication sharedApplication].idleTimerDisabled = YES;
             _recordButton.enabled = YES;
             [self transitionToStatus:TPStateRecordingIdle];
             
-        } else if (newStatus == TPStateRecordingFirst) {
+        } else if (newStatus == TPStateRecordingFirstStarting) {
             
             assertFrom(TPStateRecordingIdle);
-            [UIApplication sharedApplication].idleTimerDisabled = YES;
             _recordButton.hidden = YES;
             [_sessionCoordinator startRecording];
-            [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordFirstInterval];
             
-        } else if (newStatus == TPStateRecordingFirstFinished) {
+        } else if (newStatus == TPStateRecordingFirstStarted) {
             
-            assertFrom(TPStateRecordingFirst);
-            [self transitionToStatus:TPStateRecordingSecond];
+            [self startProgressBar];
+            [self transitionToStatus:TPStateRecordingFirstCompleting
+                               after:TPRecordFirstInterval];
             
-        } else if (newStatus == TPStateRecordingSecond) {
+        } else if (newStatus == TPStateRecordingFirstCompleting) {
             
-            assertFrom(TPStateRecordingFirstFinished);
+            assertFrom(TPStateRecordingFirstStarted);
+            [self pauseProgressBar];
+            [_sessionCoordinator stopRecording];
+            
+        } else if (newStatus == TPStateRecordingFirstCompleted) {
+            
+            assertFrom(TPStateRecordingFirstCompleting);
+            [self transitionToStatus:TPStateRecordingSecondStarting];
+            
+        } else if (newStatus == TPStateRecordingSecondStarting) {
+            
+            assertFrom(TPStateRecordingFirstCompleted);
             AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_firstVideoURL];
             [_firstPlayer replaceCurrentItemWithPlayerItem:item];
             AVCaptureDevicePosition targetCamera;
@@ -308,27 +333,69 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
             }
             [_sessionCoordinator setDevicePosition:targetCamera];
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
-            [_firstPlayer play];
             [_sessionCoordinator startRecording];
-            [_sessionCoordinator performSelector:@selector(stopRecording) withObject:nil afterDelay:TPRecordSecondInterval];
             
-        } else if (newStatus == TPStateRecordingSecondFinished) {
+        } else if (newStatus == TPStateRecordingSecondStarted) {
             
-            assertFrom(TPStateRecordingSecond);
-            AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_secondVideoURL];
-            [_secondPlayer replaceCurrentItemWithPlayerItem:item];
-            [_secondPlayer play];
-            [_previewLayer removeFromSuperlayer];
+            [_firstPlayer play];
+            [self resumeProgressBar];
+            [self transitionToStatus:TPStateRecordingSecondCompleting after:TPRecordSecondInterval];
+            
+        } else if (newStatus == TPStateRecordingSecondCompleting) {
+            
+            assertFrom(TPStateRecordingSecondStarted);
+            [self pauseProgressBar];
+            [_sessionCoordinator stopRecording];
+            
+        } else if (newStatus == TPStateRecordingSecondCompleted) {
+            
+            assertFrom(TPStateRecordingSecondCompleting);
+            [self resumeProgressBar];
+            [[_previewLayer connection] setEnabled:NO]; // Freeze preview
             [self transitionToStatus:TPStateRecordingCompleted];
             
         } else if (newStatus == TPStateRecordingCompleted) {
             
-            assertFrom(TPStateRecordingSecondFinished);
+            assertFrom(TPStateRecordingSecondCompleted);
             [UIApplication sharedApplication].idleTimerDisabled = NO;
             [self transitionToStatus:TPStateRecordingIdle];
 
         }
     }
+}
+
+-(void)transitionToStatus:(TPState)newStatus after:(NSTimeInterval)delay
+{
+    [self performBlock:^{
+        [self transitionToStatus:newStatus];
+    } afterDelay:TPRecordFirstInterval];
+}
+
+-(void)startProgressBar
+{
+    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    animation.fromValue = [NSNumber numberWithFloat:0.0f];
+    animation.toValue = [NSNumber numberWithFloat:1.0f];
+    animation.duration = TPRecordFirstInterval + TPRecordSecondInterval;
+    [_progressBarLayer addAnimation:animation forKey:@"myStroke"];
+    [self.view.layer insertSublayer:_progressBarLayer atIndex:3];
+}
+
+-(void)pauseProgressBar
+{
+    CFTimeInterval pausedTime = [_progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil];
+    _progressBarLayer.speed = 0.0;
+    _progressBarLayer.timeOffset = pausedTime;
+}
+
+-(void)resumeProgressBar
+{
+    CFTimeInterval pausedTime = [_progressBarLayer timeOffset];
+    _progressBarLayer.speed = 1.0;
+    _progressBarLayer.timeOffset = 0.0;
+    _progressBarLayer.beginTime = 0.0;
+    CFTimeInterval timeSincePause = [_progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil] - pausedTime;
+    _progressBarLayer.beginTime = timeSincePause;
 }
 
 #pragma mark = IDCaptureSessionAssetWriterCoordinatorDelegate methods
@@ -357,7 +424,11 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 
 - (void)coordinatorDidBeginRecording:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
-    
+    if (_status == TPStateRecordingFirstStarting) {
+        [self transitionToStatus:TPStateRecordingFirstStarted];
+    } else if (_status == TPStateRecordingSecondStarting) {
+        [self transitionToStatus:TPStateRecordingSecondStarted];
+    }
 }
 
 - (void)coordinator:(IDCaptureSessionAssetWriterCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
@@ -368,12 +439,12 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
         success = [error.userInfo[AVErrorRecordingSuccessfullyFinishedKey] boolValue];
     }
     if ( success ) {
-        if (_status == TPStateRecordingFirst) {
+        if (_status == TPStateRecordingFirstCompleting) {
             _firstVideoURL = outputFileURL;
-            [self transitionToStatus:TPStateRecordingFirstFinished];
-        } else if (_status == TPStateRecordingSecond) {
+            [self transitionToStatus:TPStateRecordingFirstCompleted];
+        } else if (_status == TPStateRecordingSecondCompleting) {
             _secondVideoURL = outputFileURL;
-            [self transitionToStatus:TPStateRecordingSecondFinished];
+            [self transitionToStatus:TPStateRecordingSecondCompleted];
         }
     }
 }
@@ -401,6 +472,18 @@ static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil];
     [alertController addAction:cancelAction];
     [self presentViewController:alertController animated:YES completion:nil];
+}
+
+- (void)performBlock:(void (^)(void))block
+          afterDelay:(NSTimeInterval)delay
+{
+    [self performSelector:@selector(fireBlockAfterDelay:)
+               withObject:[block copy]
+               afterDelay:delay];
+}
+
+- (void)fireBlockAfterDelay:(void (^)(void))block {
+    block();
 }
 
 @end
