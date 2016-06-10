@@ -42,11 +42,11 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 7;
+static const NSTimeInterval TPRecordFirstInterval               = 5;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
-static const CGFloat TPProgressBarWidth                         = 12.0f;
+static const CGFloat TPProgressBarWidth                         = 20.0f;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -62,6 +62,7 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
 @property (nonatomic) NSURL *firstVideoURL;
 @property (nonatomic) NSURL *secondVideoURL;
 @property (nonatomic) CAShapeLayer *progressBarLayer;
+@property (nonatomic) CAShapeLayer *progressBarTrackLayer;
 
 @end
 
@@ -70,6 +71,7 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
     CGRect topViewportRect;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
+    UIActivityIndicatorView *spinner;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -154,6 +156,11 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
     [_progressBarLayer setFillColor:[UIColor clearColor].CGColor];
     UIBezierPath *path = [UIBezierPath bezierPathWithRect:self.view.bounds];
     _progressBarLayer.path = path.CGPath;
+    _progressBarTrackLayer = [CAShapeLayer layer];
+    [_progressBarTrackLayer setStrokeColor:[UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.2].CGColor];
+    [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
+    [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
+    _progressBarTrackLayer.path = _progressBarLayer.path;
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -293,11 +300,13 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
             
             assertFrom(TPStateRecordingIdle);
             _recordButton.hidden = YES;
+            [self startRecordVisualCue];
             [_sessionCoordinator startRecording];
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
             [self startProgressBar];
+            [self startSecondRecordingVisualCue];
             [self transitionToStatus:TPStateRecordingFirstCompleting
                                after:TPRecordFirstInterval];
             
@@ -337,6 +346,7 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
             
         } else if (newStatus == TPStateRecordingSecondStarted) {
             
+            [spinner removeFromSuperview];
             [_firstPlayer play];
             [self resumeProgressBar];
             [self transitionToStatus:TPStateRecordingSecondCompleting after:TPRecordSecondInterval];
@@ -371,6 +381,31 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
     } afterDelay:TPRecordFirstInterval];
 }
 
+-(void)startRecordVisualCue
+{
+    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    animation.fromValue = [NSNumber numberWithFloat:0.0f];
+    animation.toValue = [NSNumber numberWithFloat:1.0f];
+    animation.duration = 0.3;
+    [_progressBarTrackLayer addAnimation:animation forKey:@"myOpacity"];
+    [self.view.layer insertSublayer:_progressBarTrackLayer atIndex:3];
+}
+
+-(void)startSecondRecordingVisualCue
+{
+    [UIView animateWithDuration:TPRecordFirstInterval
+                          delay:0.0
+                        options:UIViewAnimationOptionCurveEaseOut
+                     animations:^{
+                         self.view.layer.backgroundColor = [UIColor whiteColor].CGColor;
+                     } completion:^ (BOOL completed){
+                         spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+                         [spinner startAnimating];
+                         [spinner setFrame:bottomViewportRect];
+                         [self.view addSubview:spinner];
+                     }];
+}
+
 -(void)startProgressBar
 {
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
@@ -378,7 +413,7 @@ static const CGFloat TPProgressBarWidth                         = 12.0f;
     animation.toValue = [NSNumber numberWithFloat:1.0f];
     animation.duration = TPRecordFirstInterval + TPRecordSecondInterval;
     [_progressBarLayer addAnimation:animation forKey:@"myStroke"];
-    [self.view.layer insertSublayer:_progressBarLayer atIndex:3];
+    [self.view.layer insertSublayer:_progressBarLayer atIndex:4];
 }
 
 -(void)pauseProgressBar
