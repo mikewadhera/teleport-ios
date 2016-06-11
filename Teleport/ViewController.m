@@ -47,9 +47,10 @@ static const NSTimeInterval TPRecordFirstInterval               = 5;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
+static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
 static const CGFloat TPProgressBarWidth                         = 20.0f;
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
-static const CGFloat TPSpinnerDuration                          = 0.3f;
+static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -175,7 +176,7 @@ static const CGFloat TPSpinnerDuration                          = 0.3f;
     [_secondRecordingVisualCueLayer addSublayer:_secondRecordingVisualCueSpinnerLayer];
     _secondRecordingVisualCueSpinnerLayer.lineWidth = TPSpinnerBarWidth;
     _secondRecordingVisualCueSpinnerLayer.fillColor = nil;
-    _secondRecordingVisualCueSpinnerLayer.strokeColor = [UIColor colorWithWhite:0.0 alpha:0.33].CGColor;
+    _secondRecordingVisualCueSpinnerLayer.strokeColor = [UIColor colorWithWhite:0.0 alpha:0.20].CGColor;
     CGRect bounds = _secondRecordingVisualCueLayer.bounds;
     CGPoint center = CGPointMake(bounds.size.width/2, bounds.size.height/2);
     CGFloat radius = 44;
