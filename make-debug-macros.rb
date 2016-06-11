@@ -1,20 +1,21 @@
 STATES = %w(
-    TPStateSessionStopped
-    TPStateSessionStopping
-    TPStateSessionStarting
-    TPStateSessionStarted
-    TPStateSessionConfigurationFailed
-    TPStateRecordingIdle
-    TPStateRecordingStarted
-    TPStateRecordingFirstStarting
-    TPStateRecordingFirstStarted
-    TPStateRecordingFirstCompleting
-    TPStateRecordingFirstCompleted
-    TPStateRecordingSecondStarting
-    TPStateRecordingSecondStarted
-    TPStateRecordingSecondCompleting
-    TPStateRecordingSecondCompleted
-    TPStateRecordingCompleted
+TPStateSessionStopped
+TPStateSessionStopping
+TPStateSessionStarting
+TPStateSessionStarted
+TPStateSessionConfigurationFailed
+TPStateRecordingIdle
+TPStateRecordingStarted
+TPStateRecordingFirstStarting
+TPStateRecordingFirstStarted
+TPStateRecordingFirstCompleting
+TPStateRecordingFirstCompleted
+TPStateSessionConfigurationUpdated
+TPStateRecordingSecondStarting
+TPStateRecordingSecondStarted
+TPStateRecordingSecondCompleting
+TPStateRecordingSecondCompleted
+TPStateRecordingCompleted
 )
 
 template = '#define stateFor(enum) [@[%s] objectAtIndex:enum]'

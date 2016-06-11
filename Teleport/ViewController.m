@@ -26,6 +26,7 @@ typedef NS_ENUM( NSInteger, TPState ) {
     TPStateRecordingFirstStarted,
     TPStateRecordingFirstCompleting,
     TPStateRecordingFirstCompleted,
+    TPStateSessionConfigurationUpdated,
     TPStateRecordingSecondStarting,
     TPStateRecordingSecondStarted,
     TPStateRecordingSecondCompleting,
@@ -35,11 +36,11 @@ typedef NS_ENUM( NSInteger, TPState ) {
 typedef void (^ AssertFromBlock)(TPState);
 
 // For debugging
-#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
+#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
 // Constants
-static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionBack;
-static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
+static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionFront;
+static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionBack;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
 static const NSTimeInterval TPRecordFirstInterval               = 5;
@@ -47,6 +48,8 @@ static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstI
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 static const CGFloat TPProgressBarWidth                         = 20.0f;
+static const CGFloat TPSpinnerBarWidth                          = 4.0f;
+static const CGFloat TPSpinnerDuration                          = 0.3f;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -63,6 +66,8 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
 @property (nonatomic) NSURL *secondVideoURL;
 @property (nonatomic) CAShapeLayer *progressBarLayer;
 @property (nonatomic) CAShapeLayer *progressBarTrackLayer;
+@property (nonatomic) CALayer *secondRecordingVisualCueLayer;
+@property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
 
 @end
 
@@ -71,7 +76,6 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
     CGRect topViewportRect;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
-    UIActivityIndicatorView *spinner;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -80,8 +84,6 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    [self.view setBackgroundColor:[UIColor blackColor]];
     
     // Check camera access
     [self checkCameraAuth];
@@ -149,18 +151,40 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
     [self.view.layer insertSublayer:_previewLayer atIndex:1];
     [self moveLayer:_previewLayer to:TPRecordFirstViewport];
     
-    // Progress
+    // Progress Bar
     _progressBarLayer = [CAShapeLayer layer];
+    [self.view.layer insertSublayer:_progressBarLayer atIndex:4];
     [_progressBarLayer setStrokeColor:[UIColor redColor].CGColor];
     [_progressBarLayer setLineWidth:TPProgressBarWidth];
     [_progressBarLayer setFillColor:[UIColor clearColor].CGColor];
     UIBezierPath *path = [UIBezierPath bezierPathWithRect:self.view.bounds];
     _progressBarLayer.path = path.CGPath;
     _progressBarTrackLayer = [CAShapeLayer layer];
-    [_progressBarTrackLayer setStrokeColor:[UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.2].CGColor];
+    [self.view.layer insertSublayer:_progressBarTrackLayer atIndex:3];
+    [_progressBarTrackLayer setStrokeColor:[UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.0].CGColor];
     [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
     [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
     _progressBarTrackLayer.path = _progressBarLayer.path;
+    
+    // Second Recording Visual Cue
+    _secondRecordingVisualCueLayer = [CALayer layer];
+    [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
+    [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
+    [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
+    _secondRecordingVisualCueSpinnerLayer = [CAShapeLayer layer];
+    [_secondRecordingVisualCueLayer addSublayer:_secondRecordingVisualCueSpinnerLayer];
+    _secondRecordingVisualCueSpinnerLayer.lineWidth = TPSpinnerBarWidth;
+    _secondRecordingVisualCueSpinnerLayer.fillColor = nil;
+    _secondRecordingVisualCueSpinnerLayer.strokeColor = [UIColor colorWithWhite:0.0 alpha:0.33].CGColor;
+    CGRect bounds = _secondRecordingVisualCueLayer.bounds;
+    CGPoint center = CGPointMake(bounds.size.width/2, bounds.size.height/2);
+    CGFloat radius = 44;
+    CGFloat startAngle = -M_PI_2;
+    CGFloat endAngle = startAngle + (M_PI*2);
+    UIBezierPath *spinPath = [UIBezierPath bezierPathWithArcCenter:CGPointZero radius:radius startAngle:startAngle endAngle:endAngle clockwise:true];
+    _secondRecordingVisualCueSpinnerLayer.path = spinPath.CGPath;
+    _secondRecordingVisualCueSpinnerLayer.position = center;
+    [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -276,11 +300,13 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
+            [self hideProgressBar];
             _recordButton.enabled = NO;
             [_sessionCoordinator startRunning];
             
         } else if (newStatus == TPStateSessionStopping) {
             
+            [self hideProgressBar];
             [UIApplication sharedApplication].idleTimerDisabled = NO;
             _recordButton.enabled = NO;
             [_sessionCoordinator stopRunning];
@@ -314,18 +340,18 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
             
             assertFrom(TPStateRecordingFirstStarted);
             [self pauseProgressBar];
+            [self showSpinner];
             [_sessionCoordinator stopRecording];
             
         } else if (newStatus == TPStateRecordingFirstCompleted) {
             
             assertFrom(TPStateRecordingFirstCompleting);
-            [self transitionToStatus:TPStateRecordingSecondStarting];
-            
-        } else if (newStatus == TPStateRecordingSecondStarting) {
-            
-            assertFrom(TPStateRecordingFirstCompleted);
             AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_firstVideoURL];
             [_firstPlayer replaceCurrentItemWithPlayerItem:item];
+            [self transitionToStatus:TPStateSessionConfigurationUpdated];
+            
+        } else if (newStatus == TPStateSessionConfigurationUpdated) {
+            
             AVCaptureDevicePosition targetCamera;
             switch (TPRecordSecondViewport)
             {
@@ -340,13 +366,21 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
                     break;
                 }
             }
+            // -setDevicePosition is long running / blocks this thread
+            // Involves updating the underlying session's configuration
+            // which can take 600ms+ on iPhone6
             [_sessionCoordinator setDevicePosition:targetCamera];
+            [self transitionToStatus:TPStateRecordingSecondStarting];
+            
+        } else if (newStatus == TPStateRecordingSecondStarting) {
+            
+            assertFrom(TPStateSessionConfigurationUpdated);
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
+            [_secondRecordingVisualCueLayer setHidden:YES];
             [_sessionCoordinator startRecording];
             
         } else if (newStatus == TPStateRecordingSecondStarted) {
             
-            [spinner removeFromSuperview];
             [_firstPlayer play];
             [self resumeProgressBar];
             [self transitionToStatus:TPStateRecordingSecondCompleting after:TPRecordSecondInterval];
@@ -355,19 +389,20 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
             
             assertFrom(TPStateRecordingSecondStarted);
             [self pauseProgressBar];
+            [[_previewLayer connection] setEnabled:NO]; // Freeze preview
             [_sessionCoordinator stopRecording];
             
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
             [self resumeProgressBar];
-            [[_previewLayer connection] setEnabled:NO]; // Freeze preview
             [self transitionToStatus:TPStateRecordingCompleted];
             
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
             [UIApplication sharedApplication].idleTimerDisabled = NO;
+            [self hideProgressBar];
             [self transitionToStatus:TPStateRecordingIdle];
 
         }
@@ -388,32 +423,28 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
     animation.toValue = [NSNumber numberWithFloat:1.0f];
     animation.duration = 0.3;
     [_progressBarTrackLayer addAnimation:animation forKey:@"myOpacity"];
-    [self.view.layer insertSublayer:_progressBarTrackLayer atIndex:3];
 }
 
 -(void)startSecondRecordingVisualCue
 {
-    [UIView animateWithDuration:TPRecordFirstInterval
-                          delay:0.0
-                        options:UIViewAnimationOptionCurveEaseOut
-                     animations:^{
-                         self.view.layer.backgroundColor = [UIColor whiteColor].CGColor;
-                     } completion:^ (BOOL completed){
-                         spinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-                         [spinner startAnimating];
-                         [spinner setFrame:bottomViewportRect];
-                         [self.view addSubview:spinner];
-                     }];
+    CABasicAnimation *anime = [CABasicAnimation animationWithKeyPath:@"backgroundColor"];
+    anime.fromValue = (id)[_secondRecordingVisualCueLayer backgroundColor];
+    _secondRecordingVisualCueLayer.backgroundColor = [UIColor whiteColor].CGColor;
+    anime.toValue = (id)[UIColor whiteColor].CGColor;
+    anime.duration = TPRecordFirstInterval;
+    //anime.autoreverses = YES;
+    [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
 }
 
 -(void)startProgressBar
 {
+    [_progressBarTrackLayer setHidden:NO];
+    [_progressBarLayer setHidden:NO];
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
     animation.fromValue = [NSNumber numberWithFloat:0.0f];
     animation.toValue = [NSNumber numberWithFloat:1.0f];
     animation.duration = TPRecordFirstInterval + TPRecordSecondInterval;
     [_progressBarLayer addAnimation:animation forKey:@"myStroke"];
-    [self.view.layer insertSublayer:_progressBarLayer atIndex:4];
 }
 
 -(void)pauseProgressBar
@@ -421,6 +452,12 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
     CFTimeInterval pausedTime = [_progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil];
     _progressBarLayer.speed = 0.0;
     _progressBarLayer.timeOffset = pausedTime;
+}
+
+-(void)hideProgressBar
+{
+    [_progressBarLayer setHidden:YES];
+    [_progressBarTrackLayer setHidden:YES];
 }
 
 -(void)resumeProgressBar
@@ -431,6 +468,12 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
     _progressBarLayer.beginTime = 0.0;
     CFTimeInterval timeSincePause = [_progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil] - pausedTime;
     _progressBarLayer.beginTime = timeSincePause;
+}
+
+-(void)showSpinner
+{
+    [_secondRecordingVisualCueSpinnerLayer setHidden:NO];
+    [[self class] addSpinnerAnimations:_secondRecordingVisualCueSpinnerLayer];
 }
 
 #pragma mark = IDCaptureSessionAssetWriterCoordinatorDelegate methods
@@ -519,6 +562,42 @@ static const CGFloat TPProgressBarWidth                         = 20.0f;
 
 - (void)fireBlockAfterDelay:(void (^)(void))block {
     block();
+}
+
++(void)addSpinnerAnimations:(CAShapeLayer*)spinnerLayer
+{
+    CABasicAnimation *strokeEnd = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    strokeEnd.fromValue = [NSNumber numberWithInt:0];
+    strokeEnd.toValue = [NSNumber numberWithInt:1];
+    strokeEnd.duration = TPSpinnerDuration;
+    strokeEnd.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    CAAnimationGroup *strokeEndGroup = [CAAnimationGroup new];
+    strokeEndGroup.duration = TPSpinnerDuration;
+    strokeEndGroup.repeatCount = MAXFLOAT;
+    strokeEndGroup.animations = @[ strokeEnd ];
+    
+    [spinnerLayer addAnimation:strokeEndGroup forKey:@"myStrokeEnd"];
+    
+    CABasicAnimation *strokeStart = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
+    strokeStart.beginTime = TPSpinnerDuration;
+    strokeStart.fromValue = [NSNumber numberWithInt:0];
+    strokeStart.toValue = [NSNumber numberWithInt:1];
+    strokeStart.duration = TPSpinnerDuration;
+    strokeStart.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    CAAnimationGroup *strokeStartGroup = [CAAnimationGroup new];
+    strokeStartGroup.duration = TPSpinnerDuration + 0.5;
+    strokeStartGroup.repeatCount = MAXFLOAT;
+    strokeStartGroup.animations = @[ strokeStart ];
+    
+    [spinnerLayer addAnimation:strokeStartGroup forKey:@"myStrokeStart"];
+    
+    CABasicAnimation *rotation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotation.fromValue = [NSNumber numberWithInt:0];
+    rotation.toValue = [NSNumber numberWithInt:M_PI * 2];
+    rotation.duration = TPSpinnerDuration*2;
+    rotation.repeatCount = MAXFLOAT;
+    
+    //[spinnerLayer addAnimation:rotation forKey:@"myRotation"];
 }
 
 @end
