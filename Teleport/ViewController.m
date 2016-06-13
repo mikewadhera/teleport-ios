@@ -43,15 +43,17 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 4;
+static const NSTimeInterval TPRecordFirstInterval               = 3.5;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
-static const CGFloat TPProgressBarWidth                         = 40.0f;
+static const CGFloat TPProgressTrackBarWidth                    = 44.0f;
+static const CGFloat TPProgressBarWidth                         = 36.0f;
 static const CGFloat TPProgressBarTapWidth                      = 44.0f;
-#define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.25]
-#define      TPProgressBarColor                                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1.0]
+#define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.40]
+#define      TPProgressBarTrackHighlightColor                   [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.20]
+#define      TPProgressBarColor                                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
 // Constants
@@ -165,13 +167,14 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     _progressBarTrackLayer = [CAShapeLayer layer];
     [self.view.layer insertSublayer:_progressBarTrackLayer atIndex:3];
     [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
-    [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
+    [_progressBarTrackLayer setLineWidth:TPProgressTrackBarWidth];
     [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
     _progressBarTrackLayer.path = _progressBarLayer.path;
-    CGPathRef tapTargetPath = CGPathCreateCopyByStrokingPath(path.CGPath, NULL, TPProgressBarTapWidth, path.lineCapStyle, path.lineJoinStyle, path.miterLimit);
+    CGPathRef tapTargetPath = CGPathCreateCopyByStrokingPath(path.CGPath, NULL, fmax(TPProgressBarWidth, TPProgressBarTapWidth), path.lineCapStyle, path.lineJoinStyle, path.miterLimit);
     _tapTarget = [UIBezierPath bezierPathWithCGPath:tapTargetPath];
     CGPathRelease(tapTargetPath);
-    UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapDetected:)];
+    UILongPressGestureRecognizer *tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
+    tapRecognizer.minimumPressDuration = 0;
     [self.view addGestureRecognizer:tapRecognizer];
     
     // Second Recording Visual Cue
@@ -227,11 +230,28 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     [super viewDidDisappear:animated];
 }
 
--(void)tapDetected:(UITapGestureRecognizer *)tapRecognizer
+- (void)longPress:(UILongPressGestureRecognizer *)longPressGestureRecognizer
 {
-    CGPoint tapLocation = [tapRecognizer locationInView:self.view];
-    if ([_tapTarget containsPoint:tapLocation]) {
-        [self transitionToStatus:TPStateRecordingFirstStarting];
+     CGPoint tapLocation = [longPressGestureRecognizer locationInView:self.view];
+    
+    if (longPressGestureRecognizer.state == UIGestureRecognizerStateBegan || longPressGestureRecognizer.state == UIGestureRecognizerStateChanged)
+    {
+        if ([_tapTarget containsPoint:tapLocation])
+        {
+            [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackHighlightColor.CGColor];
+        }
+        else
+        {
+            [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
+        }
+    }
+    else if (longPressGestureRecognizer.state == UIGestureRecognizerStateEnded)
+    {
+        if ([_tapTarget containsPoint:tapLocation])
+        {
+            [_progressBarTrackLayer setHidden:YES];
+            [self transitionToStatus:TPStateRecordingFirstStarting];
+        }
     }
 }
 
@@ -432,7 +452,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 
 -(void)startProgressBar
 {
-    [_progressBarTrackLayer setHidden:YES];
     [_progressBarLayer setHidden:NO];
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
     animation.fromValue = [NSNumber numberWithFloat:0.0f];
