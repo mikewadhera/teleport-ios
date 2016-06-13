@@ -39,16 +39,19 @@ typedef void (^ AssertFromBlock)(TPState);
 #define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
 // Constants
-static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionFront;
-static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionBack;
+static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionBack;
+static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 5;
+static const NSTimeInterval TPRecordFirstInterval               = 4;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
-static const CGFloat TPProgressBarWidth                         = 20.0f;
+static const CGFloat TPProgressBarWidth                         = 40.0f;
+static const CGFloat TPProgressBarTapWidth                      = 44.0f;
+#define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.25]
+#define      TPProgressBarColor                                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1.0]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
 // Constants
@@ -59,7 +62,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
 
 @property (nonatomic) TPState status;
-@property (nonatomic) UIButton *recordButton;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
@@ -69,6 +71,7 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 @property (nonatomic) CAShapeLayer *progressBarTrackLayer;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
+@property (nonatomic) UIBezierPath *tapTarget;
 
 @end
 
@@ -129,20 +132,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     int bottomViewY = floor(self.view.frame.size.height / 2.0);
     bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
-    // Record Button
-    int recordButtonW = 44;
-    int recordButtonH = 44;
-    int recordButtonX = 0;
-    int recordButtonY = 0;
-    _recordButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _recordButton.frame = CGRectMake(recordButtonX, recordButtonY, recordButtonW, recordButtonH);
-    _recordButton.center = [self.view convertPoint:self.view.center fromView:self.view.superview];
-    _recordButton.layer.cornerRadius = 0.5 * recordButtonW;
-    _recordButton.clipsToBounds = YES;
-    [_recordButton setImage:[UIImage imageNamed:@"record.png"] forState:UIControlStateNormal];
-    [_recordButton addTarget:self action:@selector(didTapRecord:) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:_recordButton];
-    
     // Player
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
     [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
@@ -155,17 +144,35 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     // Progress Bar
     _progressBarLayer = [CAShapeLayer layer];
     [self.view.layer insertSublayer:_progressBarLayer atIndex:4];
-    [_progressBarLayer setStrokeColor:[UIColor redColor].CGColor];
+    [_progressBarLayer setStrokeColor:TPProgressBarColor.CGColor];
     [_progressBarLayer setLineWidth:TPProgressBarWidth];
     [_progressBarLayer setFillColor:[UIColor clearColor].CGColor];
-    UIBezierPath *path = [UIBezierPath bezierPathWithRect:self.view.bounds];
+    [_progressBarLayer setHidden:YES];
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    CGSize screenSize = self.view.bounds.size;
+    CGPoint pointA = CGPointMake(screenSize.width/2, 0);
+    CGPoint pointB = CGPointMake(screenSize.width, 0);
+    CGPoint pointC = CGPointMake(screenSize.width, screenSize.height);
+    CGPoint pointD = CGPointMake(0, screenSize.height);
+    CGPoint pointE = CGPointMake(0, 0);
+    [path moveToPoint:pointA];
+    [path addLineToPoint:pointB];
+    [path addLineToPoint:pointC];
+    [path addLineToPoint:pointD];
+    [path addLineToPoint:pointE];
+    [path addLineToPoint:pointA];
     _progressBarLayer.path = path.CGPath;
     _progressBarTrackLayer = [CAShapeLayer layer];
     [self.view.layer insertSublayer:_progressBarTrackLayer atIndex:3];
-    [_progressBarTrackLayer setStrokeColor:[UIColor colorWithRed:1.0 green:0.0 blue:0.0 alpha:0.0].CGColor];
+    [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
     [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
     [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
     _progressBarTrackLayer.path = _progressBarLayer.path;
+    CGPathRef tapTargetPath = CGPathCreateCopyByStrokingPath(path.CGPath, NULL, TPProgressBarTapWidth, path.lineCapStyle, path.lineJoinStyle, path.miterLimit);
+    _tapTarget = [UIBezierPath bezierPathWithCGPath:tapTargetPath];
+    CGPathRelease(tapTargetPath);
+    UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapDetected:)];
+    [self.view addGestureRecognizer:tapRecognizer];
     
     // Second Recording Visual Cue
     _secondRecordingVisualCueLayer = [CALayer layer];
@@ -218,6 +225,14 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     }
     
     [super viewDidDisappear:animated];
+}
+
+-(void)tapDetected:(UITapGestureRecognizer *)tapRecognizer
+{
+    CGPoint tapLocation = [tapRecognizer locationInView:self.view];
+    if ([_tapTarget containsPoint:tapLocation]) {
+        [self transitionToStatus:TPStateRecordingFirstStarting];
+    }
 }
 
 -(void)checkCameraAuth
@@ -274,11 +289,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     [CATransaction commit];
 }
 
--(void)didTapRecord:(id)button
-{
-    [self transitionToStatus:TPStateRecordingFirstStarting];
-}
-
 -(void)transitionToStatus:(TPState)newStatus
 {
     TPState oldStatus = _status;
@@ -301,33 +311,25 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
-            [self hideProgressBar];
-            _recordButton.enabled = NO;
             [_sessionCoordinator startRunning];
             
         } else if (newStatus == TPStateSessionStopping) {
             
-            [self hideProgressBar];
             [UIApplication sharedApplication].idleTimerDisabled = NO;
-            _recordButton.enabled = NO;
             [_sessionCoordinator stopRunning];
             
         } else if (newStatus == TPStateSessionConfigurationFailed) {
             
-            _recordButton.enabled = NO;
             sessionConfigurationFailed = YES; // checked in viewWillAppear
         
         } else if (newStatus == TPStateSessionStarted) {
             
             [UIApplication sharedApplication].idleTimerDisabled = YES;
-            _recordButton.enabled = YES;
             [self transitionToStatus:TPStateRecordingIdle];
             
         } else if (newStatus == TPStateRecordingFirstStarting) {
             
             assertFrom(TPStateRecordingIdle);
-            _recordButton.hidden = YES;
-            [self startRecordVisualCue];
             [_sessionCoordinator startRecording];
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
@@ -402,8 +404,8 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
+            [_progressBarLayer setHidden:YES];
             [UIApplication sharedApplication].idleTimerDisabled = NO;
-            [self hideProgressBar];
             [self transitionToStatus:TPStateRecordingIdle];
 
         }
@@ -415,15 +417,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     [self performBlock:^{
         [self transitionToStatus:newStatus];
     } afterDelay:TPRecordFirstInterval];
-}
-
--(void)startRecordVisualCue
-{
-    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"opacity"];
-    animation.fromValue = [NSNumber numberWithFloat:0.0f];
-    animation.toValue = [NSNumber numberWithFloat:1.0f];
-    animation.duration = 0.3;
-    [_progressBarTrackLayer addAnimation:animation forKey:@"myOpacity"];
 }
 
 -(void)startSecondRecordingVisualCue
@@ -439,7 +432,7 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 
 -(void)startProgressBar
 {
-    [_progressBarTrackLayer setHidden:NO];
+    [_progressBarTrackLayer setHidden:YES];
     [_progressBarLayer setHidden:NO];
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
     animation.fromValue = [NSNumber numberWithFloat:0.0f];
@@ -453,12 +446,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     CFTimeInterval pausedTime = [_progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil];
     _progressBarLayer.speed = 0.0;
     _progressBarLayer.timeOffset = pausedTime;
-}
-
--(void)hideProgressBar
-{
-    [_progressBarLayer setHidden:YES];
-    [_progressBarTrackLayer setHidden:YES];
 }
 
 -(void)resumeProgressBar
