@@ -120,6 +120,8 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    // Always muted
+    _firstPlayer.muted = YES;
     
     // Calculate Viewports
     int topViewW = self.view.frame.size.width;
@@ -137,8 +139,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     // Player
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
     [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
-    [self.view.layer insertSublayer:_secondPlayerLayer atIndex:1];
-    [self moveLayer:_secondPlayerLayer to:TPRecordSecondViewport];
     
     // Preview
     [_previewLayer setBackgroundColor:[[UIColor blackColor] CGColor]];
