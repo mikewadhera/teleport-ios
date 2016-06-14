@@ -73,7 +73,6 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 @property (nonatomic) CAShapeLayer *progressBarTrackLayer;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
-@property (nonatomic) UIBezierPath *tapTarget;
 
 @end
 
