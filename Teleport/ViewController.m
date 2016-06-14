@@ -55,6 +55,7 @@ static const CGFloat TPProgressBarWidth                         = 36.0f;
 #define      TPProgressBarColor                                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.9]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
+static const NSInteger TPPlayerMaxLoopCount                     = 100;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -363,12 +364,13 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
         } else if (newStatus == TPStateRecordingFirstCompleted) {
             
             assertFrom(TPStateRecordingFirstCompleting);
-            AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_firstVideoURL];
-            [_firstPlayer replaceCurrentItemWithPlayerItem:item];
             [self transitionToStatus:TPStateSessionConfigurationUpdated];
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
             
+            [[self class] smoothLoop:[AVAsset assetWithURL:_firstVideoURL]
+                            inPlayer:_firstPlayer
+                               count:TPPlayerMaxLoopCount];
             AVCaptureDevicePosition targetCamera;
             switch (TPRecordSecondViewport)
             {
@@ -408,14 +410,15 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
             assertFrom(TPStateRecordingSecondStarted);
             [self pauseProgressBar];
             [[_previewLayer connection] setEnabled:NO]; // Freeze preview
+            [_firstPlayer pause];
             [_sessionCoordinator stopRecording];
             
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
-            AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_secondVideoURL];
-            [_secondPlayer replaceCurrentItemWithPlayerItem:item];
-            [_firstPlayer seekToTime:kCMTimeZero];
+            [[self class] smoothLoop:[AVAsset assetWithURL:_secondVideoURL]
+                            inPlayer:_secondPlayer
+                               count:TPPlayerMaxLoopCount];
             [_firstPlayer play];
             [_secondPlayer play];
             [_previewLayer setHidden:YES];
@@ -618,6 +621,23 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     rotation.repeatCount = MAXFLOAT;
     
     //[spinnerLayer addAnimation:rotation forKey:@"myRotation"];
+}
+
++ (void)smoothLoop:(AVAsset *)asset inPlayer:(AVPlayer*)player count:(NSUInteger)loopCount {
+    AVMutableComposition * composition = [AVMutableComposition composition];
+    
+    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, asset.duration);
+    
+    for (NSUInteger i = 0; i < loopCount; i++) {
+        [composition insertTimeRange:timeRange ofAsset:asset atTime:composition.duration error:nil];
+        AVAssetTrack *assetVideoTrack = [asset tracksWithMediaType:AVMediaTypeVideo].lastObject;
+        AVMutableCompositionTrack *compositionVideoTrack = [composition tracksWithMediaType:AVMediaTypeVideo].lastObject;
+        if (assetVideoTrack && compositionVideoTrack) {
+            [compositionVideoTrack setPreferredTransform:assetVideoTrack.preferredTransform];
+        }
+    }
+    
+    [player replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithAsset:composition]];
 }
 
 @end
