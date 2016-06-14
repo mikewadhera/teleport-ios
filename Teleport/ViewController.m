@@ -43,19 +43,19 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 4.5;
+static const NSTimeInterval TPRecordFirstInterval               = 4.2;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
+static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
 static const NSInteger TPEncodeWidth                            = 376;
 static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
 static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
-static const CGFloat TPProgressBarWidth                         = 36.0f;
+static const CGFloat TPProgressBarWidth                         = 39.0f;
 #define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
-#define      TPProgressBarTrackHighlightColor                   [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.9]
-#define      TPProgressBarColor                                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.9]
+#define      TPProgressBarTrackHighlightColor                   [UIColor redColor]
+#define      TPProgressBarColor                                 [UIColor redColor]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
-static const NSInteger TPPlayerMaxLoopCount                     = 100;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -67,8 +67,6 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
-@property (nonatomic) AVPlayer *secondPlayer;
-@property (nonatomic) AVPlayerLayer *secondPlayerLayer;
 @property (nonatomic) NSURL *firstVideoURL;
 @property (nonatomic) NSURL *secondVideoURL;
 @property (nonatomic) CAShapeLayer *progressBarLayer;
@@ -122,9 +120,6 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    _secondPlayer = [[AVPlayer alloc] init];
-    _secondPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_secondPlayer];
-    _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
     // Calculate Viewports
     int topViewW = self.view.frame.size.width;
@@ -368,9 +363,10 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
             
-            [[self class] smoothLoop:[AVAsset assetWithURL:_firstVideoURL]
-                            inPlayer:_firstPlayer
-                               count:TPPlayerMaxLoopCount];
+            [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem
+                                                            playerItemWithAsset:[AVAsset
+                                                                                 assetWithURL:_firstVideoURL]]];
+            [_firstPlayer seekToTime:kCMTimeZero];
             AVCaptureDevicePosition targetCamera;
             switch (TPRecordSecondViewport)
             {
@@ -389,14 +385,15 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
             // Involves updating the underlying session's configuration
             // which can take 600ms+ on iPhone6
             [_sessionCoordinator setDevicePosition:targetCamera];
-            [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
-            [self stopSecondRecordingVisualCue];
+            [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
+            [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
             [self transitionToStatus:TPStateRecordingSecondStarting after:TPRecordSecondGraceInterval];
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
             
             assertFrom(TPStateSessionConfigurationUpdated);
+            [_secondRecordingVisualCueLayer setHidden:YES];
             [_sessionCoordinator startRecording];
             
         } else if (newStatus == TPStateRecordingSecondStarted) {
@@ -416,19 +413,12 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
-            [[self class] smoothLoop:[AVAsset assetWithURL:_secondVideoURL]
-                            inPlayer:_secondPlayer
-                               count:TPPlayerMaxLoopCount];
-            [_firstPlayer play];
-            [_secondPlayer play];
-            [_previewLayer setHidden:YES];
             [self resumeProgressBar];
             [self transitionToStatus:TPStateRecordingCompleted];
             
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
-            [_progressBarLayer setHidden:YES];
             [UIApplication sharedApplication].idleTimerDisabled = NO;
             [self transitionToStatus:TPStateRecordingIdle];
 
@@ -453,17 +443,6 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
     anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
     //anime.autoreverses = YES;
     [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
-}
-
--(void)stopSecondRecordingVisualCue
-{
-    CABasicAnimation *anime = [CABasicAnimation animationWithKeyPath:@"opacity"];
-    anime.fromValue = [NSNumber numberWithInteger:1];
-    _secondRecordingVisualCueLayer.opacity = 0;
-    anime.toValue = [NSNumber numberWithInteger:0];
-    anime.duration = TPRecordSecondGraceInterval;
-    anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
-    [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myOpacity"];
 }
 
 -(void)startProgressBar
@@ -621,23 +600,6 @@ static const NSInteger TPPlayerMaxLoopCount                     = 100;
     rotation.repeatCount = MAXFLOAT;
     
     //[spinnerLayer addAnimation:rotation forKey:@"myRotation"];
-}
-
-+ (void)smoothLoop:(AVAsset *)asset inPlayer:(AVPlayer*)player count:(NSUInteger)loopCount {
-    AVMutableComposition * composition = [AVMutableComposition composition];
-    
-    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, asset.duration);
-    
-    for (NSUInteger i = 0; i < loopCount; i++) {
-        [composition insertTimeRange:timeRange ofAsset:asset atTime:composition.duration error:nil];
-        AVAssetTrack *assetVideoTrack = [asset tracksWithMediaType:AVMediaTypeVideo].lastObject;
-        AVMutableCompositionTrack *compositionVideoTrack = [composition tracksWithMediaType:AVMediaTypeVideo].lastObject;
-        if (assetVideoTrack && compositionVideoTrack) {
-            [compositionVideoTrack setPreferredTransform:assetVideoTrack.preferredTransform];
-        }
-    }
-    
-    [player replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithAsset:composition]];
 }
 
 @end
