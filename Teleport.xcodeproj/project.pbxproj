@@ -18,6 +18,7 @@
 		FB8705681D07C50C00336D82 /* record@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB8705671D07C50C00336D82 /* record@2x.png */; };
 		FBF38E0C1D1092A100F7D881 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBF38E0A1D1092A100F7D881 /* AudioToolbox.framework */; };
 		FBF38E0D1D1092A100F7D881 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBF38E0B1D1092A100F7D881 /* AVFoundation.framework */; };
+		FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FBF38E0F1D10D00300F7D881 /* PreviewViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,8 @@
 		FB8705671D07C50C00336D82 /* record@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "record@2x.png"; sourceTree = "<group>"; };
 		FBF38E0A1D1092A100F7D881 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		FBF38E0B1D1092A100F7D881 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		FBF38E0E1D10D00300F7D881 /* PreviewViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PreviewViewController.h; sourceTree = "<group>"; };
+		FBF38E0F1D10D00300F7D881 /* PreviewViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PreviewViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +94,8 @@
 				FB0D9D591D0622DA0024CDC4 /* AppDelegate.m */,
 				FB0D9D5B1D0622DA0024CDC4 /* ViewController.h */,
 				FB0D9D5C1D0622DA0024CDC4 /* ViewController.m */,
+				FBF38E0E1D10D00300F7D881 /* PreviewViewController.h */,
+				FBF38E0F1D10D00300F7D881 /* PreviewViewController.m */,
 				FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */,
 				FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */,
 				FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */,
@@ -184,6 +189,7 @@
 				FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */,
 				FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */,
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
+				FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -3,6 +3,7 @@
 
 #import "ViewController.h"
 #import "IDCaptureSessionAssetWriterCoordinator.h"
+#import "PreviewViewController.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -48,7 +49,7 @@ static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstI
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
 static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
 static const NSInteger TPEncodeWidth                            = 376;
-static const NSInteger TPEncodeHeight                           = TPEncodeWidth;
+static const NSInteger TPEncodeHeight                           = 334;
 static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
 static const CGFloat TPProgressBarWidth                         = 39.0f;
 #define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
@@ -119,6 +120,9 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    // HACK: Back camera for some reason shows landscape right in player layer
+    CGAffineTransform rotateTransform = CGAffineTransformMakeRotation(-(M_PI / 2.0));
+    [_firstPlayerLayer setAffineTransform:rotateTransform];
     // Always muted
     _firstPlayer.muted = YES;
     
@@ -298,6 +302,13 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
     [CATransaction commit];
 }
 
+-(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+{
+    PreviewViewController *vc = [segue destinationViewController];
+    vc.firstVideoURL = _firstVideoURL;
+    vc.secondVideoURL = _secondVideoURL;
+}
+
 -(void)transitionToStatus:(TPState)newStatus
 {
     TPState oldStatus = _status;
@@ -420,6 +431,7 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
             assertFrom(TPStateRecordingSecondCompleted);
             [UIApplication sharedApplication].idleTimerDisabled = NO;
             [self transitionToStatus:TPStateRecordingIdle];
+            [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
         }
     }

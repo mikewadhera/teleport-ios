@@ -252,10 +252,10 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     if ( [_videoConnection isVideoStabilizationSupported] ) {
         [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeOff];
     }
+    if ( [_videoConnection isVideoOrientationSupported] ) {
+        [_videoConnection setVideoOrientation:AVCaptureVideoOrientationPortrait];
+    }
     if (_devicePosition == AVCaptureDevicePositionFront) {
-        if ( [_videoConnection isVideoOrientationSupported] ) {
-            [_videoConnection setVideoOrientation:AVCaptureVideoOrientationLandscapeRight];
-        }
         if ( [_videoConnection isVideoMirroringSupported] ) {
             [_videoConnection setVideoMirrored:YES];
         }
