@@ -10,8 +10,10 @@ static const int TPCompositionEncodeFrameRate       = 30;
 
 @interface PreviewViewController ()
 
-@property (nonatomic) AVPlayer *player;
-@property (nonatomic) AVPlayerLayer *playerLayer;
+@property (nonatomic) AVPlayer *firstPlayer;
+@property (nonatomic) AVPlayerLayer *firstPlayerLayer;
+@property (nonatomic) AVPlayer *secondPlayer;
+@property (nonatomic) AVPlayerLayer *secondPlayerLayer;
 @property (nonatomic) NSURL *videoURL;
 
 @end
@@ -25,14 +27,59 @@ static const int TPCompositionEncodeFrameRate       = 30;
 -(void)viewDidLoad {
     [super viewDidLoad];
     
-    _player = [AVPlayer new];
-    _playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
-    _playerLayer.frame = self.view.bounds;
-    _playerLayer.backgroundColor = [UIColor blackColor].CGColor;
+    NSNumber *fileSizeValue = nil;
+    [_firstVideoURL getResourceValue:&fileSizeValue
+                       forKey:NSURLFileSizeKey
+                        error:nil];
+    if (fileSizeValue) {
+        NSLog(@"value for %@ is %f", _firstVideoURL, [fileSizeValue floatValue]/1024.0f/1024.0f);
+    }
+    NSNumber *fileSizeValue2 = nil;
+    [_secondVideoURL getResourceValue:&fileSizeValue2
+                              forKey:NSURLFileSizeKey
+                               error:nil];
+    if (fileSizeValue2) {
+        NSLog(@"value for %@ is %f", _secondVideoURL, [fileSizeValue2 floatValue]/1024.0f/1024.0f);
+    }
     
-    [self.view.layer addSublayer:_playerLayer];
     
-    [self composeVideo];
+    // Calculate Viewports
+    int topViewW = self.view.frame.size.width;
+    int topViewH = ceil(self.view.frame.size.height / 2.0);
+    int topViewX = 0;
+    int topViewY = 0;
+    CGRect topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
+    
+    int bottomViewW = self.view.frame.size.width;
+    int bottomViewH = ceil(self.view.frame.size.height / 2.0);
+    int bottomViewX = 0;
+    int bottomViewY = floor(self.view.frame.size.height / 2.0);
+    CGRect bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
+    
+    _firstPlayer = [AVPlayer new];
+    [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithURL:_firstVideoURL]];
+    _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
+    _firstPlayerLayer.frame = topViewportRect;
+    _firstPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
+    _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    _firstPlayer.muted = YES; // Always muted
+    NSLog(@"%f", [[[_firstPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
+    
+    _secondPlayer = [AVPlayer new];
+    [_secondPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithURL:_secondVideoURL]];
+    _secondPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_secondPlayer];
+    _secondPlayerLayer.frame = bottomViewportRect;
+    _secondPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
+    _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    NSLog(@"%f", [[[_secondPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
+    
+    [self.view.layer addSublayer:_firstPlayerLayer];
+    [self.view.layer addSublayer:_secondPlayerLayer];
+    
+    [_firstPlayer play];
+    [_secondPlayer play];
+    
+    //[self composeVideo];
 }
 
 -(void)composeVideo
@@ -91,14 +138,14 @@ static const int TPCompositionEncodeFrameRate       = 30;
     [exporter setVideoComposition:mainCompositionInst];
     exporter.outputFileType = AVFileTypeQuickTimeMovie;
     
-    [exporter exportAsynchronouslyWithCompletionHandler:^
-    {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [_player replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithURL:_videoURL]];
-            [_player seekToTime:kCMTimeZero];
-            [_player play];
-        });
-    }];
+//    [exporter exportAsynchronouslyWithCompletionHandler:^
+//    {
+//        dispatch_async(dispatch_get_main_queue(), ^{
+//            [_player replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithURL:_videoURL]];
+//            [_player seekToTime:kCMTimeZero];
+//            [_player play];
+//        });
+//    }];
 }
 
 @end

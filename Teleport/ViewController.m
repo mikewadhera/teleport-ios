@@ -44,12 +44,10 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 4.2;
+static const NSTimeInterval TPRecordFirstInterval               = 4.0;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
 static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
-static const NSInteger TPEncodeWidth                            = 376;
-static const NSInteger TPEncodeHeight                           = 334;
 static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
 static const CGFloat TPProgressBarWidth                         = 39.0f;
 #define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
@@ -505,12 +503,17 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings
 {
-    return [NSDictionary dictionaryWithObjectsAndKeys:
-            AVVideoCodecH264, AVVideoCodecKey,
-            [NSNumber numberWithInt:TPEncodeWidth], AVVideoWidthKey,
-            [NSNumber numberWithInt:TPEncodeHeight], AVVideoHeightKey,
-            AVVideoScalingModeResizeAspectFill,AVVideoScalingModeKey,
-            nil];
+    NSDictionary *compressionProperties = @{
+                                            AVVideoExpectedSourceFrameRateKey : @(60),
+                                            AVVideoMaxKeyFrameIntervalKey : @(60)
+                                            };
+    
+    return @{ AVVideoCodecKey : AVVideoCodecH264,
+              //                       AVVideoWidthKey : @(752),
+              //                       AVVideoHeightKey : @(668),
+              //              AVVideoScalingModeKey:AVVideoScalingModeResizeAspectFill,
+              AVVideoCompressionPropertiesKey : compressionProperties
+              };
 }
 
 - (void)coordinatorDidBeginRecording:(IDCaptureSessionAssetWriterCoordinator *)coordinator

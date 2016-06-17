@@ -215,6 +215,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         [self.captureSession addInput:self.cameraDeviceInput];
         NSLog(@"failed to set device position: %ld", (long)self.devicePosition);
     }
+    [[self class] configureCameraForHighFrameRate:videoDevice atPosition:self.devicePosition];
     
     // Audio
     NSError *error;
@@ -236,7 +237,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 {
     // Video
     self.videoDataOutput = [AVCaptureVideoDataOutput new];
-    _videoDataOutput.videoSettings = nil;
+    _videoDataOutput.videoSettings = @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)};
     _videoDataOutput.alwaysDiscardsLateVideoFrames = NO;
     [_videoDataOutput setSampleBufferDelegate:self queue:_videoDataOutputQueue];
     if( [captureSession canAddOutput:_videoDataOutput] ){
@@ -248,14 +249,13 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         }
     }
     _videoConnection = [_videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
-    // Turn off stabilization
     if ( [_videoConnection isVideoStabilizationSupported] ) {
         [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeOff];
     }
-    if ( [_videoConnection isVideoOrientationSupported] ) {
-        [_videoConnection setVideoOrientation:AVCaptureVideoOrientationPortrait];
-    }
     if (_devicePosition == AVCaptureDevicePositionFront) {
+        if ( [_videoConnection isVideoOrientationSupported] ) {
+            [_videoConnection setVideoOrientation:AVCaptureVideoOrientationLandscapeRight];
+        }
         if ( [_videoConnection isVideoMirroringSupported] ) {
             [_videoConnection setVideoMirrored:YES];
         }
@@ -334,6 +334,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 - (void)writerCoordinator:(IDAssetWriterCoordinator *)recorder didFailWithError:(NSError *)error
 {
+    NSLog(error.description);
     @synchronized( self ) {
         self.assetWriterCoordinator = nil;
         [self transitionToRecordingStatus:RecordingStatusIdle error:error];
@@ -517,6 +518,36 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         }
         else {
             NSLog( @"Could not lock device for configuration: %@", error );
+        }
+    }
+}
+
++ (void)configureCameraForHighFrameRate:(AVCaptureDevice *)videoDevice atPosition:(AVCaptureDevicePosition)position
+{
+    for(AVCaptureDeviceFormat *vFormat in [videoDevice formats] )
+    {
+        CMFormatDescriptionRef description= vFormat.formatDescription;
+        float maxrate=((AVFrameRateRange*)[vFormat.videoSupportedFrameRateRanges objectAtIndex:0]).maxFrameRate;
+        
+        // HACK: need a better way to get this format
+        int targetHeight = 1080;
+        if (position == AVCaptureDevicePositionFront) targetHeight = 720;
+        
+//        NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
+        
+        if(maxrate>59 &&
+           CMVideoFormatDescriptionGetDimensions(description).height == targetHeight &&
+           CMFormatDescriptionGetMediaSubType(description)==kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+        {
+            if ( YES == [videoDevice lockForConfiguration:NULL] )
+            {
+                videoDevice.activeFormat = vFormat;
+                [videoDevice setActiveVideoMinFrameDuration:CMTimeMake(1,60)];
+                [videoDevice setActiveVideoMaxFrameDuration:CMTimeMake(1,60)];
+                [videoDevice unlockForConfiguration];
+                
+                NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
+            }
         }
     }
 }
