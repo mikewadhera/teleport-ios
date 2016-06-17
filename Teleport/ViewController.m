@@ -44,7 +44,7 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 4.0;
+static const NSTimeInterval TPRecordFirstInterval               = 4.2;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
 static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
@@ -55,6 +55,9 @@ static const CGFloat TPProgressBarWidth                         = 39.0f;
 #define      TPProgressBarColor                                 [UIColor redColor]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
+static const CGFloat TPEncodeBitrate                            = 5000000;
+static const CGFloat TPEncodeWidth                              = 1280;
+static const CGFloat TPEncodeHeight                             = 960;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate>
@@ -503,17 +506,14 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings
 {
-    NSDictionary *compressionProperties = @{
-                                            AVVideoExpectedSourceFrameRateKey : @(60),
-                                            AVVideoMaxKeyFrameIntervalKey : @(60)
-                                            };
-    
-    return @{ AVVideoCodecKey : AVVideoCodecH264,
-              //                       AVVideoWidthKey : @(752),
-              //                       AVVideoHeightKey : @(668),
-              //              AVVideoScalingModeKey:AVVideoScalingModeResizeAspectFill,
+    NSDictionary *compressionProperties = @{ AVVideoAverageBitRateKey : @(TPEncodeBitrate) };
+    return @{
+              AVVideoCodecKey : AVVideoCodecH264,
+              AVVideoWidthKey : @(TPEncodeWidth),
+              AVVideoHeightKey : @(TPEncodeHeight),
+              AVVideoScalingModeKey:AVVideoScalingModeResizeAspectFill,
               AVVideoCompressionPropertiesKey : compressionProperties
-              };
+            };
 }
 
 - (void)coordinatorDidBeginRecording:(IDCaptureSessionAssetWriterCoordinator *)coordinator
