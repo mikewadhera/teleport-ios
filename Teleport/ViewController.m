@@ -121,9 +121,6 @@ static const CGFloat TPEncodeHeight                             = 960;
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    // HACK: Back camera for some reason shows landscape right in player layer
-    CGAffineTransform rotateTransform = CGAffineTransformMakeRotation(-(M_PI / 2.0));
-    [_firstPlayerLayer setAffineTransform:rotateTransform];
     // Always muted
     _firstPlayer.muted = YES;
     
