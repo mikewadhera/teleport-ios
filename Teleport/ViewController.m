@@ -55,7 +55,7 @@ static const CGFloat TPProgressBarWidth                         = 39.0f;
 #define      TPProgressBarColor                                 [UIColor redColor]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
-static const CGFloat TPEncodeBitrate                            = 5000000;
+static const CGFloat TPEncodeBitrate                            = 6000000;
 static const CGFloat TPEncodeWidth                              = 1280;
 static const CGFloat TPEncodeHeight                             = 960;
 // Constants
