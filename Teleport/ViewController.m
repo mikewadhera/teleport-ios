@@ -1,5 +1,6 @@
 
 @import AVFoundation;
+@import CoreLocation;
 
 #import "ViewController.h"
 #import "IDCaptureSessionAssetWriterCoordinator.h"
@@ -58,12 +59,16 @@ static const CGFloat TPSpinnerDuration                          = TPCameraChange
 static const CGFloat TPEncodeBitrate                            = 6000000;
 static const CGFloat TPEncodeWidth                              = 1280;
 static const CGFloat TPEncodeHeight                             = 960;
+#define      TPLocationAccuracy                                 kCLLocationAccuracyBestForNavigation
+static const CLLocationDistance TPLocationDistanceFilter        = 100;
 // Constants
 
-@interface ViewController () <IDCaptureSessionCoordinatorDelegate>
+@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate>
 
 @property (nonatomic) TPCameraSetupResult setupResult;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
+@property (nonatomic, strong) CLLocationManager *locationManager;
+@property (nonatomic, strong) CLLocation *lastKnownLocation;
 
 @property (nonatomic) TPState status;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
@@ -92,8 +97,14 @@ static const CGFloat TPEncodeHeight                             = 960;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    // Check camera access
-    [self checkCameraAuth];
+    // Create the location manager (needs to happen before auth check)
+    _locationManager = [[CLLocationManager alloc] init];
+    [_locationManager setDelegate:self];
+    _locationManager.desiredAccuracy = TPLocationAccuracy;
+    _locationManager.distanceFilter = TPLocationDistanceFilter;
+    
+    // Check camera and GPS sensor access
+    [self checkAuth];
     
     // Create the session coordinator
     AVCaptureDevicePosition initialDevicePosition;
@@ -246,7 +257,7 @@ static const CGFloat TPEncodeHeight                             = 960;
     }
 }
 
--(void)checkCameraAuth
+-(void)checkAuth
 {
     // Assume we have camera permission
     _setupResult = TPCameraSetupResultSuccess;
@@ -258,6 +269,7 @@ static const CGFloat TPEncodeHeight                             = 960;
         case AVAuthorizationStatusAuthorized:
         {
             // The user has previously granted access to the camera.
+            [self.locationManager requestWhenInUseAuthorization];
             break;
         }
         case AVAuthorizationStatusNotDetermined:
@@ -265,6 +277,8 @@ static const CGFloat TPEncodeHeight                             = 960;
             [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^( BOOL granted ) {
                 if ( ! granted ) {
                     _setupResult = TPCameraSetupResultCameraNotAuthorized;
+                } else {
+                    [self.locationManager requestWhenInUseAuthorization];
                 }
             }];
             break;
@@ -305,6 +319,7 @@ static const CGFloat TPEncodeHeight                             = 960;
     PreviewViewController *vc = [segue destinationViewController];
     vc.firstVideoURL = _firstVideoURL;
     vc.secondVideoURL = _secondVideoURL;
+    vc.location = _lastKnownLocation;
 }
 
 -(void)transitionToStatus:(TPState)newStatus
@@ -352,6 +367,7 @@ static const CGFloat TPEncodeHeight                             = 960;
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
+            [_locationManager startUpdatingLocation];
             [self startProgressBar];
             [self startSecondRecordingVisualCue];
             [self transitionToStatus:TPStateRecordingFirstCompleting
@@ -538,6 +554,14 @@ static const CGFloat TPEncodeHeight                             = 960;
             [self transitionToStatus:TPStateRecordingSecondCompleted];
         }
     }
+}
+
+#pragma mark = CLLocationManager methods
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation {
+    _lastKnownLocation = newLocation;
+    NSLog(@"NewLocation %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
+    [_locationManager stopUpdatingLocation];
 }
 
 #pragma mark Helpers
