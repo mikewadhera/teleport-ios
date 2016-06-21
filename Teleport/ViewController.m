@@ -5,6 +5,7 @@
 #import "ViewController.h"
 #import "IDCaptureSessionAssetWriterCoordinator.h"
 #import "PreviewViewController.h"
+#import "TP3DFlyover.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -45,7 +46,7 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 4.2;
+static const NSTimeInterval TPRecordFirstInterval               = 5.0;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
 static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
@@ -69,6 +70,8 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
 @property (nonatomic, strong) CLLocationManager *locationManager;
 @property (nonatomic, strong) CLLocation *lastKnownLocation;
+@property (nonatomic) CLLocationDirection lastKnownDirection;
+@property (nonatomic) TP3DFlyover *flyover;
 
 @property (nonatomic) TPState status;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
@@ -207,6 +210,12 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     _secondRecordingVisualCueSpinnerLayer.path = spinPath.CGPath;
     _secondRecordingVisualCueSpinnerLayer.position = center;
     [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
+    
+    // Flyover
+    _flyover = [[TP3DFlyover alloc] init];
+    [_flyover.mapView setFrame:self.view.bounds];
+    _flyover.mapView.alpha = 0;
+    [self.view addSubview:_flyover.mapView];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -320,6 +329,8 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     vc.firstVideoURL = _firstVideoURL;
     vc.secondVideoURL = _secondVideoURL;
     vc.location = _lastKnownLocation;
+    vc.direction = _lastKnownDirection;
+    vc.flyover = _flyover;
 }
 
 -(void)transitionToStatus:(TPState)newStatus
@@ -344,6 +355,8 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
+            [_locationManager startUpdatingLocation];
+            [_locationManager startUpdatingHeading];
             [_sessionCoordinator startRunning];
             
         } else if (newStatus == TPStateSessionStopping) {
@@ -367,7 +380,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
-            [_locationManager startUpdatingLocation];
             [self startProgressBar];
             [self startSecondRecordingVisualCue];
             [self transitionToStatus:TPStateRecordingFirstCompleting
@@ -560,8 +572,21 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation {
     _lastKnownLocation = newLocation;
+    // Pre-load flyover
+    _flyover.location = _lastKnownLocation;
+    [_flyover preload];
     NSLog(@"NewLocation %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
     [_locationManager stopUpdatingLocation];
+}
+
+- (void)locationManager:(CLLocationManager *)manager
+       didUpdateHeading:(CLHeading *)newHeading
+{
+    _lastKnownDirection = [newHeading trueHeading];
+    _flyover.direction = _lastKnownDirection;
+    [_flyover preload];
+    NSLog(@"NewHeading %f", [newHeading trueHeading]);
+    [_locationManager stopUpdatingHeading];
 }
 
 #pragma mark Helpers

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FB047EFB1D1863D3004275CC /* TP3DFlyover.m in Sources */ = {isa = PBXBuildFile; fileRef = FB047EFA1D1863D3004275CC /* TP3DFlyover.m */; };
 		FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */; };
 		FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB41A1D08BBBA00125716 /* IDAssetWriterCoordinator.m */; };
 		FB0D9D571D0622DA0024CDC4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0D9D561D0622DA0024CDC4 /* main.m */; };
@@ -22,6 +23,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		FB047EF91D1863D3004275CC /* TP3DFlyover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TP3DFlyover.h; sourceTree = "<group>"; };
+		FB047EFA1D1863D3004275CC /* TP3DFlyover.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TP3DFlyover.m; sourceTree = "<group>"; };
 		FB0CB4171D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDCaptureSessionAssetWriterCoordinator.h; sourceTree = "<group>"; };
 		FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDCaptureSessionAssetWriterCoordinator.m; sourceTree = "<group>"; };
 		FB0CB4191D08BBBA00125716 /* IDAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDAssetWriterCoordinator.h; sourceTree = "<group>"; };
@@ -92,6 +95,8 @@
 				FB8705671D07C50C00336D82 /* record@2x.png */,
 				FB0D9D581D0622DA0024CDC4 /* AppDelegate.h */,
 				FB0D9D591D0622DA0024CDC4 /* AppDelegate.m */,
+				FB047EF91D1863D3004275CC /* TP3DFlyover.h */,
+				FB047EFA1D1863D3004275CC /* TP3DFlyover.m */,
 				FB0D9D5B1D0622DA0024CDC4 /* ViewController.h */,
 				FB0D9D5C1D0622DA0024CDC4 /* ViewController.m */,
 				FBF38E0E1D10D00300F7D881 /* PreviewViewController.h */,
@@ -190,6 +195,7 @@
 				FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */,
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
 				FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */,
+				FB047EFB1D1863D3004275CC /* TP3DFlyover.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

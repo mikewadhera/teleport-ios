@@ -1,15 +1,16 @@
 
 @import AVFoundation;
+@import MapKit;
 
 #import "PreviewViewController.h"
+#import "TP3DFlyover.h"
 
-static const NSTimeInterval TPVideoLengthInterval   = 4;
-static const int TPCompositionEncodeWidth           = 376;
-static const int TPCompositionEncodeHeight          = 668;
-static const int TPCompositionEncodeFrameRate       = 30;
+static const NSTimeInterval TPFlyoverInterval = 3.09;
+static const NSTimeInterval TPFlyoverCutFadeInterval = 0.2;
 
 @interface PreviewViewController ()
 
+@property (nonatomic) UIView *playerView;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) AVPlayer *secondPlayer;
@@ -73,79 +74,30 @@ static const int TPCompositionEncodeFrameRate       = 30;
     _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     NSLog(@"%f", [[[_secondPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
     
-    [self.view.layer addSublayer:_firstPlayerLayer];
-    [self.view.layer addSublayer:_secondPlayerLayer];
+    _playerView = [[UIView alloc] initWithFrame:self.view.bounds];
+    [_playerView.layer addSublayer:_firstPlayerLayer];
+    [_playerView.layer addSublayer:_secondPlayerLayer];
     
-    [_firstPlayer play];
-    [_secondPlayer play];
+    [_flyover.mapView removeFromSuperview];
+    [_flyover.mapView setFrame:self.view.bounds];
+    [self.view addSubview:_flyover.mapView];
+    _flyover.mapView.alpha = 1;
+    [_flyover start];
     
-    //[self composeVideo];
+    [self performSelector:@selector(playVideo) withObject:nil afterDelay:TPFlyoverInterval];
 }
 
--(void)composeVideo
+-(void)playVideo
 {
-    AVMutableComposition *mixComposition = [[AVMutableComposition alloc] init];
-    
-    AVURLAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
-    AVAssetTrack *firstVideoAssetTrack = [[firstAsset tracksWithMediaType:AVMediaTypeVideo] lastObject];
-    
-    AVURLAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
-    AVAssetTrack *secondVideoAssetTrack = [[secondAsset tracksWithMediaType:AVMediaTypeVideo] lastObject];
-    
-    AVMutableCompositionTrack *firstTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo
-                                                                        preferredTrackID:kCMPersistentTrackID_Invalid];
-    [firstTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, CMTimeMake(TPVideoLengthInterval, 1))
-                        ofTrack:firstVideoAssetTrack
-                         atTime:kCMTimeZero
-                          error:nil];
-    
-    
-    AVMutableCompositionTrack *secondTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo
-                                                                         preferredTrackID:kCMPersistentTrackID_Invalid];
-    [secondTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, CMTimeMake(TPVideoLengthInterval, 1))
-                         ofTrack:secondVideoAssetTrack
-                          atTime:kCMTimeZero
-                           error:nil];
-    
-    AVMutableVideoCompositionInstruction *mainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
-    mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(TPVideoLengthInterval, 1));
-    
-    AVMutableVideoCompositionLayerInstruction *firstlayerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:firstTrack];
-    CGAffineTransform firstScale = CGAffineTransformMakeScale(1.0f, 1.0f);
-    CGAffineTransform firstMove = CGAffineTransformMakeTranslation(0, 0);
-    [firstlayerInstruction setTransform:CGAffineTransformConcat(firstScale, firstMove) atTime:kCMTimeZero];
-    
-    AVMutableVideoCompositionLayerInstruction *secondlayerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:secondTrack];
-    CGAffineTransform secondScale = CGAffineTransformMakeScale(1.0f, 1.0f);
-    CGAffineTransform secondMove = CGAffineTransformMakeTranslation(0, firstAsset.naturalSize.height);
-    [secondlayerInstruction setTransform:CGAffineTransformConcat(secondScale, secondMove) atTime:kCMTimeZero];
-    
-    mainInstruction.layerInstructions = [NSArray arrayWithObjects:firstlayerInstruction, secondlayerInstruction, nil];
-    
-    AVMutableVideoComposition *mainCompositionInst = [AVMutableVideoComposition videoComposition];
-    mainCompositionInst.instructions = [NSArray arrayWithObject:mainInstruction];
-    mainCompositionInst.frameDuration = CMTimeMake(1, TPCompositionEncodeFrameRate);
-    mainCompositionInst.renderSize = CGSizeMake(TPCompositionEncodeWidth, TPCompositionEncodeHeight);
-    
-    NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
-    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
-    
-    _videoURL = [NSURL fileURLWithPath:outputFilePath];
-    
-    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mixComposition
-                                                                      presetName:AVAssetExportPresetHighestQuality];
-    exporter.outputURL = _videoURL;
-    [exporter setVideoComposition:mainCompositionInst];
-    exporter.outputFileType = AVFileTypeQuickTimeMovie;
-    
-//    [exporter exportAsynchronouslyWithCompletionHandler:^
-//    {
-//        dispatch_async(dispatch_get_main_queue(), ^{
-//            [_player replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithURL:_videoURL]];
-//            [_player seekToTime:kCMTimeZero];
-//            [_player play];
-//        });
-//    }];
+    [_firstPlayer play];
+    [_secondPlayer play];
+    [UIView transitionFromView:_flyover.mapView
+                        toView:_playerView
+                      duration:TPFlyoverCutFadeInterval
+                       options:UIViewAnimationOptionTransitionCrossDissolve
+                    completion:^(BOOL finished) {
+                        [_flyover.mapView removeFromSuperview];
+                    }];
 }
 
 @end
