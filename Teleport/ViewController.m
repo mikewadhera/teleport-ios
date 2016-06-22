@@ -46,7 +46,7 @@ static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevic
 static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
 static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
 static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 5.0;
+static const NSTimeInterval TPRecordFirstInterval               = 5.2;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
 static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
@@ -58,8 +58,6 @@ static const CGFloat TPProgressBarWidth                         = 39.0f;
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
 static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
 static const CGFloat TPEncodeBitrate                            = 6000000;
-static const CGFloat TPEncodeWidth                              = 1280;
-static const CGFloat TPEncodeHeight                             = 960;
 #define      TPLocationAccuracy                                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance TPLocationDistanceFilter        = 100;
 // Constants
@@ -212,10 +210,10 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
     
     // Flyover
-    _flyover = [[TP3DFlyover alloc] init];
-    [_flyover.mapView setFrame:self.view.bounds];
-    _flyover.mapView.alpha = 0;
-    [self.view addSubview:_flyover.mapView];
+//    _flyover = [[TP3DFlyover alloc] init];
+//    [_flyover.mapView setFrame:self.view.bounds];
+//    _flyover.mapView.alpha = 0;
+//    [self.view addSubview:_flyover.mapView];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -417,10 +415,13 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
                     break;
                 }
             }
+            
             // -setDevicePosition is long running / blocks this thread
             // Involves updating the underlying session's configuration
             // which can take 600ms+ on iPhone6
             [_sessionCoordinator setDevicePosition:targetCamera];
+            
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
@@ -449,6 +450,7 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             [self resumeProgressBar];
             [self transitionToStatus:TPStateRecordingCompleted];
             
@@ -531,13 +533,9 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings
 {
-    NSDictionary *compressionProperties = @{ AVVideoAverageBitRateKey : @(TPEncodeBitrate) };
     return @{
               AVVideoCodecKey : AVVideoCodecH264,
-              AVVideoWidthKey : @(TPEncodeWidth),
-              AVVideoHeightKey : @(TPEncodeHeight),
-              AVVideoScalingModeKey:AVVideoScalingModeResizeAspectFill,
-              AVVideoCompressionPropertiesKey : compressionProperties
+              AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(TPEncodeBitrate) }
             };
 }
 
@@ -574,7 +572,7 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     _lastKnownLocation = newLocation;
     // Pre-load flyover
     _flyover.location = _lastKnownLocation;
-    [_flyover preload];
+    //[_flyover preload];
     NSLog(@"NewLocation %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
     [_locationManager stopUpdatingLocation];
 }
@@ -584,7 +582,7 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 {
     _lastKnownDirection = [newHeading trueHeading];
     _flyover.direction = _lastKnownDirection;
-    [_flyover preload];
+    //[_flyover preload];
     NSLog(@"NewHeading %f", [newHeading trueHeading]);
     [_locationManager stopUpdatingHeading];
 }

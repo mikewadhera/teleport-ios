@@ -1,11 +1,12 @@
 
 #import "TP3DFlyover.h"
 
-static const int TPFlyoverSpinStartOffset = 70;
-static const int TPFlyoverSpinStep = 10;
-static const NSTimeInterval TPSFlyoverSpinStepInterval = 1.0;
+static const int TPFlyoverSpinStartOffset = 111;
+static const int TPFlyoverSpinStep = 20;
+static const NSTimeInterval TPSFlyoverSpinStepInterval = 0.2;
 static const int TPFlyoverSpinLat = 100;
 static const int TPFlyoverSpinLong = 100;
+static const CGFloat TPFlyoverPitch = 60.0;
 
 @interface RotatingCamera : NSObject
 
@@ -57,10 +58,10 @@ static const int TPFlyoverSpinLong = 100;
 {
     if (_location && _direction) {
         [_rotatingCamera stopRotating];
-        [_mapView setRegion:MKCoordinateRegionMakeWithDistance(_location.coordinate, TPFlyoverSpinLat, TPFlyoverSpinLong)];
+        [_mapView setRegion:MKCoordinateRegionMakeWithDistance(_location.coordinate, TPFlyoverSpinLat, TPFlyoverSpinLong) animated:NO];
         [_rotatingCamera startRotatingWithCoordinate:_location.coordinate
                                              heading:fmod(_direction-TPFlyoverSpinStartOffset, 360)
-                                               pitch:65
+                                               pitch:TPFlyoverPitch
                                             altitude:_location.altitude
                                          headingStep:TPFlyoverSpinStep];
     }
@@ -77,7 +78,7 @@ static const int TPFlyoverSpinLong = 100;
 // Move behavior to above method?
 -(void)mapView:(MKMapView *)mapView regionDidChangeAnimated:(BOOL)animated
 {
-    if ([_rotatingCamera isStopped]) {
+    if ([_rotatingCamera rotating]) {
         [_rotatingCamera continueRotating];
     }
 }
@@ -114,9 +115,7 @@ static const int TPFlyoverSpinLong = 100;
     [newCamera setPitch:pitch];
     [newCamera setHeading:heading];
     [newCamera setAltitude:altitude];
-    [UIView animateWithDuration:0.1 delay:0 options:UIViewAnimationOptionCurveLinear animations:^{
-        [_mapView setCamera:newCamera animated:YES];
-    } completion:nil];
+    [_mapView setCamera:newCamera animated:YES];
     _rotating = YES;
     _headingStep = headingStep;
 }
