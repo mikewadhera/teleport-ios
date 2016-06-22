@@ -3,12 +3,9 @@
 @import MapKit;
 
 #import "PreviewViewController.h"
-#import "TP3DFlyover.h"
 
 static const NSTimeInterval TPPlaybackInterval = 5.0;
 static const NSInteger TPPlaybackMaxLoopCount = 100;
-static const NSTimeInterval TPFlyoverInterval = 3.09;
-static const NSTimeInterval TPFlyoverCutFadeInterval = 0.2;
 
 @interface PreviewViewController ()
 
@@ -65,30 +62,20 @@ static const NSTimeInterval TPFlyoverCutFadeInterval = 0.2;
     _firstPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     _firstPlayer.muted = YES; // Always muted
-    NSLog(@"%f", [[[_firstPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
     
     _secondPlayer = [AVPlayer new];
     _secondPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_secondPlayer];
     _secondPlayerLayer.frame = bottomViewportRect;
     _secondPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
     _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    NSLog(@"%f", [[[_secondPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
     
     _playerView = [[UIView alloc] initWithFrame:self.view.bounds];
     [_playerView.layer addSublayer:_firstPlayerLayer];
     [_playerView.layer addSublayer:_secondPlayerLayer];
-    
     [self.view addSubview:_playerView];
+    
     [self addVideosToPlayers];
     [self playVideos];
-    
-//    [_flyover.mapView removeFromSuperview];
-//    [_flyover.mapView setFrame:self.view.bounds];
-//    [self.view addSubview:_flyover.mapView];
-//    _flyover.mapView.alpha = 1;
-//    [_flyover start];
-//    
-//    [self performSelector:@selector(playVideo) withObject:nil afterDelay:TPFlyoverInterval];
 }
 
 -(void)addVideosToPlayers
@@ -118,19 +105,15 @@ static const NSTimeInterval TPFlyoverCutFadeInterval = 0.2;
     
     [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithAsset:firstComposition]];
     [_secondPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithAsset:secondComposition]];
+    
+    NSLog(@"%f", [[[_firstPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
+    NSLog(@"%f", [[[_secondPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
 }
 
 -(void)playVideos
 {
     [_firstPlayer play];
     [_secondPlayer play];
-//    [UIView transitionFromView:_flyover.mapView
-//                        toView:_playerView
-//                      duration:TPFlyoverCutFadeInterval
-//                       options:UIViewAnimationOptionTransitionCrossDissolve
-//                    completion:^(BOOL finished) {
-//                        [_flyover.mapView removeFromSuperview];
-//                    }];
 }
 
 @end
