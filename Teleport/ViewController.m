@@ -89,6 +89,7 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     CGRect topViewportRect;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
+    AVCaptureDevicePosition initialDevicePosition;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -97,6 +98,8 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.view.backgroundColor = [UIColor blackColor];
     
     // Create the location manager (needs to happen before auth check)
     _locationManager = [[CLLocationManager alloc] init];
@@ -110,7 +113,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     [self checkAuth];
     
     // Create the session coordinator
-    AVCaptureDevicePosition initialDevicePosition;
     switch (TPRecordFirstViewport)
     {
         case TPViewportTop:
@@ -153,12 +155,10 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     
     // Player
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
-    [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
     
     // Preview
     [_previewLayer setBackgroundColor:[[UIColor blackColor] CGColor]];
     [self.view.layer insertSublayer:_previewLayer atIndex:2];
-    [self moveLayer:_previewLayer to:TPRecordFirstViewport];
     
     // Progress Bar
     _progressBarLayer = [CAShapeLayer layer];
@@ -166,7 +166,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     [_progressBarLayer setStrokeColor:TPProgressBarColor.CGColor];
     [_progressBarLayer setLineWidth:TPProgressBarWidth];
     [_progressBarLayer setFillColor:[UIColor clearColor].CGColor];
-    [_progressBarLayer setHidden:YES];
     UIBezierPath *path = [UIBezierPath bezierPath];
     CGSize screenSize = self.view.bounds.size;
     CGPoint pointA = CGPointMake(screenSize.width/2, 0);
@@ -183,7 +182,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     _progressBarLayer.path = path.CGPath;
     _progressBarTrackLayer = [CAShapeLayer layer];
     [self.view.layer insertSublayer:_progressBarTrackLayer atIndex:4];
-    [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
     [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
     [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
     _progressBarTrackLayer.path = _progressBarLayer.path;
@@ -194,18 +192,14 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     // Second Recording Visual Cue
     _secondRecordingVisualCueLayer = [CALayer layer];
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:3];
-    [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
-    [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
+    
     // Spinner
     _secondRecordingVisualCueSpinnerLayer = [CAShapeLayer layer];
     [_secondRecordingVisualCueLayer addSublayer:_secondRecordingVisualCueSpinnerLayer];
     _secondRecordingVisualCueSpinnerLayer.lineWidth = TPSpinnerBarWidth;
     _secondRecordingVisualCueSpinnerLayer.lineCap = kCALineCapRound;
     _secondRecordingVisualCueSpinnerLayer.fillColor = nil;
-    _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
-    _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
-    _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
-    CGRect bounds = _secondRecordingVisualCueLayer.bounds;
+    CGRect bounds = bottomViewportRect;
     CGPoint center = CGPointMake(bounds.size.width/2, bounds.size.height/2);
     CGFloat radius = 44;
     CGFloat startAngle = 0;
@@ -213,7 +207,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     UIBezierPath *spinPath = [UIBezierPath bezierPathWithArcCenter:CGPointZero radius:radius startAngle:startAngle endAngle:endAngle clockwise:true];
     _secondRecordingVisualCueSpinnerLayer.path = spinPath.CGPath;
     _secondRecordingVisualCueSpinnerLayer.position = center;
-    [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -241,11 +234,11 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 
 - (void)viewDidDisappear:(BOOL)animated
 {
+    [super viewDidDisappear:animated];
+    
     if ( _setupResult == TPCameraSetupResultSuccess ) {
         [self transitionToStatus:TPStateSessionStopping];
     }
-    
-    [super viewDidDisappear:animated];
 }
 
 - (void)longPress:(UILongPressGestureRecognizer *)longPressGestureRecognizer
@@ -257,8 +250,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     else if (longPressGestureRecognizer.state == UIGestureRecognizerStateEnded)
     {
         if (_status == TPStateRecordingIdle) {
-            [_progressBarTrackLayer setHidden:YES];
-            [_progressBarLayer setHidden:NO];
             [self transitionToStatus:TPStateRecordingFirstStarting];
         }
     }
@@ -353,8 +344,34 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
+            _lastKnownLocation = nil;
+            _lastKnownDirection = kCLHeadingFilterNone;
+            _lastKnownPlacemarks = nil;
+            _firstVideoURL = nil;
+            _secondVideoURL = nil;
+            [UIApplication sharedApplication].idleTimerDisabled = YES;
             [_locationManager startUpdatingLocation];
             [_locationManager startUpdatingHeading];
+            [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
+            [self moveLayer:_previewLayer to:TPRecordFirstViewport];
+            [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
+            [_progressBarTrackLayer setHidden:NO];
+            [_progressBarLayer setHidden:YES];
+            [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
+            [_secondRecordingVisualCueLayer setHidden:NO];
+            [_secondRecordingVisualCueLayer setOpacity:1.0];
+            [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
+            [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
+            _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
+            _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
+            _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
+            
+            // These get hidden if we're coming back from preview
+            if (_sessionCoordinator.devicePosition != TPViewportTopCamera) {
+                [_previewLayer setHidden:YES];
+                [_firstPlayerLayer setHidden:YES];
+            }
+            
             [_sessionCoordinator startRunning];
             
         } else if (newStatus == TPStateSessionStopping) {
@@ -369,12 +386,19 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
         
         } else if (newStatus == TPStateSessionStarted) {
             
-            [UIApplication sharedApplication].idleTimerDisabled = YES;
+            // Switch camera config back if needed
+            if (_sessionCoordinator.devicePosition != initialDevicePosition) {
+                [_sessionCoordinator setDevicePosition:initialDevicePosition];
+                [_previewLayer setHidden:NO];
+                [_firstPlayerLayer setHidden:NO];
+            }
             [self transitionToStatus:TPStateRecordingIdle];
             
         } else if (newStatus == TPStateRecordingFirstStarting) {
             
             assertFrom(TPStateRecordingIdle);
+            [_progressBarTrackLayer setHidden:YES];
+            [_progressBarLayer setHidden:NO];
             [_sessionCoordinator startRecording];
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
@@ -459,7 +483,6 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
             
             assertFrom(TPStateRecordingSecondCompleted);
             [UIApplication sharedApplication].idleTimerDisabled = NO;
-            [self transitionToStatus:TPStateRecordingIdle];
             [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
         }
@@ -492,6 +515,9 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     _progressBarLayer.strokeEnd = 0.0;
     animation.toValue = [NSNumber numberWithFloat:0.0f];
     animation.duration = TPRecordFirstInterval + TPRecordSecondInterval;
+    _progressBarLayer.speed = 1.0;
+    _progressBarLayer.timeOffset = 0.0;
+    _progressBarLayer.beginTime = 0.0;
     [_progressBarLayer addAnimation:animation forKey:@"myStroke"];
 }
 

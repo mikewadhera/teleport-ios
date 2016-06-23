@@ -112,6 +112,7 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     UIImage *cancelImage = [UIImage imageNamed:@"x.png"];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
     [_cancelButton setFrame:CGRectMake(25, 24, 44, 44)];
+    [_cancelButton addTarget:self action:@selector(cancel) forControlEvents:UIControlEventTouchUpInside];
     [_playerView addSubview:_cancelButton];
     
     [self addVideosToPlayers];
@@ -128,6 +129,11 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
 -(void)viewWillDisappear:(BOOL)animated
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
+}
+
+-(void)cancel
+{
+    [self.navigationController popViewControllerAnimated:NO];
 }
 
 -(void)addVideosToPlayers

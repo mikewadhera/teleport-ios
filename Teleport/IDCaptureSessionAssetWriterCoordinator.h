@@ -14,6 +14,8 @@
 
 @interface IDCaptureSessionAssetWriterCoordinator : NSObject
 
+@property (nonatomic, assign, readonly) AVCaptureDevicePosition devicePosition;
+
 - (instancetype)initWithDevicePosition:(AVCaptureDevicePosition)position;
 
 - (void)setDelegate:(id<IDCaptureSessionCoordinatorDelegate>)delegate callbackQueue:(dispatch_queue_t)delegateCallbackQueue;

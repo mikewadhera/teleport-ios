@@ -23,7 +23,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 @interface IDCaptureSessionAssetWriterCoordinator () <AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, IDAssetWriterCoordinatorDelegate>
 
 // Core
-@property (nonatomic, assign, readonly) AVCaptureDevicePosition devicePosition;
 @property (nonatomic, strong) AVCaptureSession *captureSession;
 @property (nonatomic, strong) dispatch_queue_t delegateCallbackQueue;
 @property (nonatomic, weak) id<IDCaptureSessionCoordinatorDelegate> delegate;
