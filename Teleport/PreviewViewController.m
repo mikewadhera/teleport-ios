@@ -62,7 +62,7 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     CGRect bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
     // Player
-    syncClock = CMClockGetHostTimeClock();
+    CMAudioClockCreate(kCFAllocatorDefault, &syncClock);
     
     _firstPlayer = [AVPlayer new];
     _firstPlayer.masterClock = syncClock;
