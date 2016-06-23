@@ -50,13 +50,12 @@ static const NSTimeInterval TPRecordFirstInterval               = 5.2;
 static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
 static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
 static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
-static const NSTimeInterval TPCameraChangeLatencyHintInterval   = 0.6;
 static const CGFloat TPProgressBarWidth                         = 39.0f;
 #define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define      TPProgressBarTrackHighlightColor                   [UIColor redColor]
 #define      TPProgressBarColor                                 [UIColor redColor]
 static const CGFloat TPSpinnerBarWidth                          = 4.0f;
-static const CGFloat TPSpinnerDuration                          = TPCameraChangeLatencyHintInterval;
+#define      TPSpinnerBarColor                                  [UIColor orangeColor]
 static const CGFloat TPEncodeBitrate                            = 6000000;
 #define      TPLocationAccuracy                                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance TPLocationDistanceFilter        = 100;
@@ -197,15 +196,19 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:3];
     [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
     [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
+    // Spinner
     _secondRecordingVisualCueSpinnerLayer = [CAShapeLayer layer];
     [_secondRecordingVisualCueLayer addSublayer:_secondRecordingVisualCueSpinnerLayer];
     _secondRecordingVisualCueSpinnerLayer.lineWidth = TPSpinnerBarWidth;
+    _secondRecordingVisualCueSpinnerLayer.lineCap = kCALineCapRound;
     _secondRecordingVisualCueSpinnerLayer.fillColor = nil;
-    _secondRecordingVisualCueSpinnerLayer.strokeColor = [UIColor colorWithWhite:0.0 alpha:0.20].CGColor;
+    _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
+    _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
+    _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
     CGRect bounds = _secondRecordingVisualCueLayer.bounds;
     CGPoint center = CGPointMake(bounds.size.width/2, bounds.size.height/2);
     CGFloat radius = 44;
-    CGFloat startAngle = -M_PI_2;
+    CGFloat startAngle = 0;
     CGFloat endAngle = startAngle + (M_PI*2);
     UIBezierPath *spinPath = [UIBezierPath bezierPathWithArcCenter:CGPointZero radius:radius startAngle:startAngle endAngle:endAngle clockwise:true];
     _secondRecordingVisualCueSpinnerLayer.path = spinPath.CGPath;
@@ -624,38 +627,51 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 
 +(void)addSpinnerAnimations:(CAShapeLayer*)spinnerLayer
 {
-    CABasicAnimation *strokeEnd = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
-    strokeEnd.fromValue = [NSNumber numberWithInt:0];
-    strokeEnd.toValue = [NSNumber numberWithInt:1];
-    strokeEnd.duration = TPSpinnerDuration;
-    strokeEnd.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-    CAAnimationGroup *strokeEndGroup = [CAAnimationGroup new];
-    strokeEndGroup.duration = TPSpinnerDuration;
-    strokeEndGroup.repeatCount = MAXFLOAT;
-    strokeEndGroup.animations = @[ strokeEnd ];
+    CAKeyframeAnimation *rotateAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation"];
+    rotateAnimation.values = @[
+                               @0,
+                               @(M_PI),
+                               @(2 * M_PI)
+                               ];
     
-    [spinnerLayer addAnimation:strokeEndGroup forKey:@"myStrokeEnd"];
+    CABasicAnimation *headAnimation = [CABasicAnimation animation];
+    headAnimation.keyPath = @"strokeStart";
+    headAnimation.duration = 1;
+    headAnimation.fromValue = @0;
+    headAnimation.toValue = @.25;
     
-    CABasicAnimation *strokeStart = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
-    strokeStart.beginTime = TPSpinnerDuration;
-    strokeStart.fromValue = [NSNumber numberWithInt:0];
-    strokeStart.toValue = [NSNumber numberWithInt:1];
-    strokeStart.duration = TPSpinnerDuration;
-    strokeStart.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
-    CAAnimationGroup *strokeStartGroup = [CAAnimationGroup new];
-    strokeStartGroup.duration = TPSpinnerDuration + 0.5;
-    strokeStartGroup.repeatCount = MAXFLOAT;
-    strokeStartGroup.animations = @[ strokeStart ];
+    CABasicAnimation *tailAnimation = [CABasicAnimation animation];
+    tailAnimation.keyPath = @"strokeEnd";
+    tailAnimation.duration = 1;
+    tailAnimation.fromValue = @0;
+    tailAnimation.toValue = @1;
     
-    [spinnerLayer addAnimation:strokeStartGroup forKey:@"myStrokeStart"];
+    CABasicAnimation *endHeadAnimation = [CABasicAnimation animation];
+    endHeadAnimation.keyPath = @"strokeStart";
+    endHeadAnimation.beginTime = 1.;
+    endHeadAnimation.duration = 1;
+    endHeadAnimation.fromValue = @.25;
+    endHeadAnimation.toValue = @1;
     
-    CABasicAnimation *rotation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
-    rotation.fromValue = [NSNumber numberWithInt:0];
-    rotation.toValue = [NSNumber numberWithInt:M_PI * 2];
-    rotation.duration = TPSpinnerDuration*2;
-    rotation.repeatCount = MAXFLOAT;
+    CABasicAnimation *endTailAnimation = [CABasicAnimation animation];
+    endTailAnimation.keyPath = @"strokeEnd";
+    endTailAnimation.beginTime = 1;
+    endTailAnimation.duration = 1;
+    endTailAnimation.fromValue = @1;
+    endTailAnimation.toValue = @1;
     
-    //[spinnerLayer addAnimation:rotation forKey:@"myRotation"];
+    CAAnimationGroup *animations = [CAAnimationGroup animation];
+    animations.duration = 2;
+    animations.animations = @[
+                              rotateAnimation,
+                              headAnimation,
+                              tailAnimation,
+                              endHeadAnimation,
+                              endTailAnimation
+                              ];
+    animations.repeatCount = INFINITY;
+    
+    [spinnerLayer addAnimation:animations forKey:@"animations"];
 }
 
 @end
