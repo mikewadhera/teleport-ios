@@ -1,6 +1,7 @@
 
 @import AVFoundation;
 @import CoreLocation;
+@import CoreMedia;
 
 #import "PreviewViewController.h"
 
@@ -21,6 +22,9 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
 @end
 
 @implementation PreviewViewController
+{
+    CMClockRef syncClock;
+}
 
 - (BOOL)prefersStatusBarHidden {
     return YES;
@@ -58,7 +62,10 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     CGRect bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
     // Player
+    syncClock = CMClockGetHostTimeClock();
+    
     _firstPlayer = [AVPlayer new];
+    _firstPlayer.masterClock = syncClock;
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.frame = topViewportRect;
     _firstPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
@@ -66,6 +73,7 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     _firstPlayer.muted = YES; // Always muted
     
     _secondPlayer = [AVPlayer new];
+    _secondPlayer.masterClock = syncClock;
     _secondPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_secondPlayer];
     _secondPlayerLayer.frame = bottomViewportRect;
     _secondPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
@@ -113,6 +121,13 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
         _advanceButton.alpha = 1.0;
         _cancelButton.alpha = 1.0;
     } completion:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
+}
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
 -(void)addVideosToPlayers
@@ -140,8 +155,11 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
         [secondCompositionVideoTrack setPreferredTransform:secondAssetVideoTrack.preferredTransform];
     }
     
-    [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithAsset:firstComposition]];
-    [_secondPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem playerItemWithAsset:secondComposition]];
+    AVPlayerItem *firstItem = [AVPlayerItem playerItemWithAsset:firstComposition];
+    AVPlayerItem *secondItem = [AVPlayerItem playerItemWithAsset:secondComposition];
+    
+    [_firstPlayer replaceCurrentItemWithPlayerItem:firstItem];
+    [_secondPlayer replaceCurrentItemWithPlayerItem:secondItem];
     
     NSLog(@"%f", [[[_firstPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
     NSLog(@"%f", [[[_secondPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
@@ -149,8 +167,18 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 -(void)playVideos
 {
-    [_firstPlayer play];
-    [_secondPlayer play];
+    [self playAt:kCMTimeZero player:_firstPlayer];
+    [self playAt:kCMTimeZero player:_secondPlayer];
+}
+
+-(void)playAt:(CMTime)time player:(AVPlayer*)player {
+    if(player.status == AVPlayerStatusReadyToPlay && player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
+        [player setRate:1.0 time:time atHostTime:CMClockGetTime(syncClock)];
+    } else {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self playAt:time player:player];
+        });
+    }
 }
 
 @end
