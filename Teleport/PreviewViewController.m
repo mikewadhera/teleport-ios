@@ -82,20 +82,25 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     NSDate *date = [NSDate date];
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"h:mm a"];
-    NSString *title = [NSString stringWithFormat:@"📍%@, %@  🕒 %@ ", [mark subLocality], [mark subAdministrativeArea], [dateFormatter stringFromDate:date]];
-    [_advanceButton setBackgroundColor:[UIColor colorWithWhite:0.10 alpha:0.9]];
-    UIImage *image = [UIImage imageNamed:@"chevron.png"];
-    [_advanceButton setImage:image forState:UIControlStateNormal];
-    [_advanceButton setTitle:title forState:UIControlStateNormal];
-    _advanceButton.titleLabel.font = [UIFont systemFontOfSize:12];
-    _advanceButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-    _advanceButton.contentEdgeInsets = UIEdgeInsetsMake(0, -image.size.width+10, 0, 0);
-    _advanceButton.imageEdgeInsets = UIEdgeInsetsMake(0, self.view.bounds.size.width-18, 0, 0);
-    [_advanceButton setFrame:CGRectMake(0, self.view.bounds.size.height, self.view.bounds.size.width, 44)];
+    NSString *title = [NSString stringWithFormat:@"Share 📍%@, %@  🕒 %@ ", [mark subLocality], [mark subAdministrativeArea], [dateFormatter stringFromDate:date]];
+    NSMutableAttributedString *mutAttrTextViewString = [[NSMutableAttributedString alloc] initWithString:title];
+    [mutAttrTextViewString setAttributes:@{ NSFontAttributeName : [UIFont systemFontOfSize:12.0],
+                                            NSForegroundColorAttributeName : [UIColor whiteColor]
+                                           } range:NSMakeRange(0, title.length)];
+    [mutAttrTextViewString setAttributes:@{ NSFontAttributeName : [UIFont boldSystemFontOfSize:12.0],
+                                            NSForegroundColorAttributeName : [UIColor whiteColor]
+                                            } range:[title rangeOfString:@"Share "]];
+    [_advanceButton setBackgroundColor:[UIColor colorWithWhite:0.0 alpha:0.35]];
+    _advanceButton.layer.borderWidth = 2.0f;
+    _advanceButton.layer.borderColor = [[UIColor colorWithWhite:1.0 alpha:1] CGColor];
+    [_advanceButton setAttributedTitle:mutAttrTextViewString forState:UIControlStateNormal];
+    _advanceButton.titleLabel.font = [UIFont boldSystemFontOfSize:11];
+    [_advanceButton setFrame:CGRectMake(10, self.view.bounds.size.height-44-10, self.view.bounds.size.width-20, 44)];
+    _advanceButton.alpha = 0.0f;
     [_playerView addSubview:_advanceButton];
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _cancelButton.alpha = 0.77;
+    _cancelButton.alpha = 0;
     UIImage *cancelImage = [UIImage imageNamed:@"x.png"];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
     [_cancelButton setFrame:CGRectMake(25, 24, 44, 44)];
@@ -104,8 +109,9 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     [self addVideosToPlayers];
     [self playVideos];
     
-    [UIView animateWithDuration:1.0 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-        [_advanceButton setFrame:CGRectMake(0, self.view.bounds.size.height-44, self.view.bounds.size.width, 44)];
+    [UIView animateWithDuration:1.0 delay:0.2 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        _advanceButton.alpha = 1.0;
+        _cancelButton.alpha = 1.0;
     } completion:nil];
 }
 
