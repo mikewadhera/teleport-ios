@@ -1,6 +1,6 @@
 
 @import AVFoundation;
-@import MapKit;
+@import CoreLocation;
 
 #import "PreviewViewController.h"
 
@@ -15,6 +15,8 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
 @property (nonatomic) AVPlayer *secondPlayer;
 @property (nonatomic) AVPlayerLayer *secondPlayerLayer;
 @property (nonatomic) NSURL *videoURL;
+@property (nonatomic) UIButton *advanceButton;
+@property (nonatomic) UIButton *cancelButton;
 
 @end
 
@@ -42,7 +44,6 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
         NSLog(@"value for %@ is %f", _secondVideoURL, [fileSizeValue2 floatValue]/1024.0f/1024.0f);
     }
     
-    
     // Calculate Viewports
     int topViewW = self.view.frame.size.width;
     int topViewH = ceil(self.view.frame.size.height / 2.0);
@@ -56,6 +57,7 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     int bottomViewY = floor(self.view.frame.size.height / 2.0);
     CGRect bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
+    // Player
     _firstPlayer = [AVPlayer new];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.frame = topViewportRect;
@@ -74,8 +76,37 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     [_playerView.layer addSublayer:_secondPlayerLayer];
     [self.view addSubview:_playerView];
     
+    // Buttons
+    _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    CLPlacemark *mark = [_placemarks firstObject];
+    NSDate *date = [NSDate date];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"h:mm a"];
+    NSString *title = [NSString stringWithFormat:@"📍%@, %@  🕒 %@ ", [mark subLocality], [mark subAdministrativeArea], [dateFormatter stringFromDate:date]];
+    [_advanceButton setBackgroundColor:[UIColor colorWithWhite:0.10 alpha:0.9]];
+    UIImage *image = [UIImage imageNamed:@"chevron.png"];
+    [_advanceButton setImage:image forState:UIControlStateNormal];
+    [_advanceButton setTitle:title forState:UIControlStateNormal];
+    _advanceButton.titleLabel.font = [UIFont systemFontOfSize:12];
+    _advanceButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    _advanceButton.contentEdgeInsets = UIEdgeInsetsMake(0, -image.size.width+10, 0, 0);
+    _advanceButton.imageEdgeInsets = UIEdgeInsetsMake(0, self.view.bounds.size.width-18, 0, 0);
+    [_advanceButton setFrame:CGRectMake(0, self.view.bounds.size.height, self.view.bounds.size.width, 44)];
+    [_playerView addSubview:_advanceButton];
+    
+    _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    _cancelButton.alpha = 0.77;
+    UIImage *cancelImage = [UIImage imageNamed:@"x.png"];
+    [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
+    [_cancelButton setFrame:CGRectMake(25, 24, 44, 44)];
+    [_playerView addSubview:_cancelButton];
+    
     [self addVideosToPlayers];
     [self playVideos];
+    
+    [UIView animateWithDuration:1.0 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+        [_advanceButton setFrame:CGRectMake(0, self.view.bounds.size.height-44, self.view.bounds.size.width, 44)];
+    } completion:nil];
 }
 
 -(void)addVideosToPlayers

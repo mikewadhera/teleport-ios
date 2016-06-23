@@ -7,5 +7,6 @@
 @property (nonatomic, copy) NSURL *secondVideoURL;
 @property (nonatomic, copy) CLLocation *location;
 @property (nonatomic) CLLocationDirection direction;
+@property (nonatomic) NSArray *placemarks;
 
 @end

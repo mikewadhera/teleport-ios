@@ -5,6 +5,7 @@
 #import "ViewController.h"
 #import "IDCaptureSessionAssetWriterCoordinator.h"
 #import "PreviewViewController.h"
+#import "TPGeocoder.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -68,6 +69,8 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 @property (nonatomic, strong) CLLocationManager *locationManager;
 @property (nonatomic, strong) CLLocation *lastKnownLocation;
 @property (nonatomic) CLLocationDirection lastKnownDirection;
+@property (nonatomic) NSArray *lastKnownPlacemarks;
+@property (nonatomic) TPGeocoder *geocoder;
 
 @property (nonatomic) TPState status;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
@@ -101,6 +104,8 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     [_locationManager setDelegate:self];
     _locationManager.desiredAccuracy = TPLocationAccuracy;
     _locationManager.distanceFilter = TPLocationDistanceFilter;
+    
+    _geocoder = [[TPGeocoder alloc] init];
     
     // Check camera and GPS sensor access
     [self checkAuth];
@@ -320,6 +325,7 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     vc.secondVideoURL = _secondVideoURL;
     vc.location = _lastKnownLocation;
     vc.direction = _lastKnownDirection;
+    vc.placemarks = _lastKnownPlacemarks;
 }
 
 -(void)transitionToStatus:(TPState)newStatus
@@ -351,6 +357,7 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
         } else if (newStatus == TPStateSessionStopping) {
             
             [UIApplication sharedApplication].idleTimerDisabled = NO;
+            [_locationManager stopUpdatingLocation];
             [_sessionCoordinator stopRunning];
             
         } else if (newStatus == TPStateSessionConfigurationFailed) {
@@ -562,7 +569,12 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation {
     _lastKnownLocation = newLocation;
     NSLog(@"NewLocation %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
-    [_locationManager stopUpdatingLocation];
+    [_geocoder reverseGeocode:_lastKnownLocation completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"Failed to reverse geocode: %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
+        }
+        _lastKnownPlacemarks = placemarks;
+    }];
 }
 
 - (void)locationManager:(CLLocationManager *)manager
