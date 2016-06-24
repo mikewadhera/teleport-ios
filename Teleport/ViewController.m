@@ -38,9 +38,6 @@ typedef NS_ENUM( NSInteger, TPState ) {
 };
 typedef void (^ AssertFromBlock)(TPState);
 
-// For debugging
-#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
-
 // Constants
 static const AVCaptureDevicePosition TPViewportTopCamera                = AVCaptureDevicePositionFront;
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
@@ -62,6 +59,9 @@ static const CGFloat                 TPEncodeBitrate                    = 600000
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
+
+// For debugging
+#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate>
 
