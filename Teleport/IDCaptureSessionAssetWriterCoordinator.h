@@ -42,6 +42,7 @@
 @optional
 
 - (void)coordinatorSessionDidFinishStarting:(IDCaptureSessionAssetWriterCoordinator *)coordinator running:(BOOL)isRunning;
+- (void)coordinatorSessionDidInterrupt:(IDCaptureSessionAssetWriterCoordinator *)coordinator;
 - (void)coordinatorSessionConfigurationDidFail:(IDCaptureSessionAssetWriterCoordinator *)coordinator;
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings;
 - (NSDictionary*)coordinatorDesiredAudioOutputSettings;

@@ -217,18 +217,21 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     [[self class] configureCameraForHighFrameRate:videoDevice atPosition:self.devicePosition];
     
     // Audio
-    NSError *error;
-    AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
-    AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
-    if ( ! audioDeviceInput ) {
-        NSLog( @"Could not create audio device input: %@", error );
-    }
-    if ( [self.captureSession canAddInput:audioDeviceInput] ) {
-        [self.captureSession addInput:audioDeviceInput];
-        self.audioDeviceInput = audioDeviceInput;
-    }
-    else {
-        NSLog( @"Could not add audio device input to the session" );
+    if (_devicePosition == AVCaptureDevicePositionFront) {
+        NSError *error;
+        AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+        AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
+        if ( ! audioDeviceInput ) {
+            NSLog( @"Could not create audio device input: %@", error );
+        }
+        if ( [self.captureSession canAddInput:audioDeviceInput] ) {
+            [self.captureSession addInput:audioDeviceInput];
+            self.audioDeviceInput = audioDeviceInput;
+            NSLog(@"%@", self.audioDeviceInput);
+        }
+        else {
+            NSLog( @"Could not add audio device input to the session" );
+        }
     }
 }
 
@@ -261,17 +264,19 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     
     // Audio
-    self.audioDataOutput = [AVCaptureAudioDataOutput new];
-    [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
-    if( [captureSession canAddOutput:_audioDataOutput] ){
-        [captureSession addOutput:_audioDataOutput];
-    } else {
-        NSLog(@"can't add output: %@", [_audioDataOutput description]);
-        if ( [[self delegate] respondsToSelector:@selector(coordinatorSessionConfigurationDidFail:)] ) {
-            [[self delegate] coordinatorSessionConfigurationDidFail:self];
+    if (_devicePosition == AVCaptureDevicePositionFront) {
+        self.audioDataOutput = [AVCaptureAudioDataOutput new];
+        [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
+        if( [captureSession canAddOutput:_audioDataOutput] ){
+            [captureSession addOutput:_audioDataOutput];
+        } else {
+            NSLog(@"can't add output: %@", [_audioDataOutput description]);
+            if ( [[self delegate] respondsToSelector:@selector(coordinatorSessionConfigurationDidFail:)] ) {
+                [[self delegate] coordinatorSessionConfigurationDidFail:self];
+            }
         }
+        _audioConnection = [_audioDataOutput connectionWithMediaType:AVMediaTypeAudio];
     }
-    _audioConnection = [_audioDataOutput connectionWithMediaType:AVMediaTypeAudio];
 }
 
 - (void)setupVideoPipelineWithInputFormatDescription:(CMFormatDescriptionRef)inputFormatDescription
@@ -483,6 +488,12 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     if ( showResumeButton ) {
         // Simply fade-in a button to enable the user to try to resume the session running.
     }
+    
+    dispatch_async( dispatch_get_main_queue(), ^{
+        if ( [[self delegate] respondsToSelector:@selector(coordinatorSessionDidInterrupt:)] ) {
+            [[self delegate] coordinatorSessionDidInterrupt:self];
+        }
+    } );
 }
 
 - (void)sessionInterruptionEnded:(NSNotification *)notification

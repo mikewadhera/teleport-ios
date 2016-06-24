@@ -92,6 +92,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
     AVCaptureDevicePosition initialDevicePosition;
+    NSTimer *firstRecordingStopTimer;
+    NSTimer *secondRecordingStartGraceTimer;
+    NSTimer *secondRecordingStopTimer;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -139,8 +142,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    // Always muted
-    _firstPlayer.muted = YES;
     
     // Calculate Viewports
     int topViewW = self.view.frame.size.width;
@@ -212,6 +213,25 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _secondRecordingVisualCueSpinnerLayer.position = center;
 }
 
+-(void)controllerResumedFromBackground
+{
+    switch ( _setupResult )
+    {
+        case TPCameraSetupResultSuccess:
+        {
+            @synchronized (self) {
+                [self transitionToStatus:TPStateSessionStarting];
+            }
+            break;
+        }
+        case TPCameraSetupResultCameraNotAuthorized:
+        {
+            [self showCameraPermissionErrorDialog];
+            break;
+        }
+    }
+}
+
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
@@ -235,6 +255,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             break;
         }
     }
+    
+    // We don't observe resign-to-background as that behavior is implicity handled by coordinatorSessionDidInterrupt:
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(controllerResumedFromBackground) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -246,6 +269,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self transitionToStatus:TPStateSessionStopping];
         }
     }
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
 - (void)longPress:(UILongPressGestureRecognizer *)longPressGestureRecognizer
@@ -389,6 +414,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateSessionStopping) {
             
             [UIApplication sharedApplication].idleTimerDisabled = NO;
+            [firstRecordingStopTimer invalidate];
+            [secondRecordingStartGraceTimer invalidate];
+            [secondRecordingStopTimer invalidate];
             [_locationManager stopUpdatingLocation];
             [_sessionCoordinator stopRunning];
             
@@ -417,8 +445,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             [self startProgressBar];
             [self startSecondRecordingVisualCue];
-            [self transitionToStatus:TPStateRecordingFirstCompleting
-                               after:TPRecordFirstInterval];
+            firstRecordingStopTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordFirstInterval
+                                                                       target:self
+                                                                     selector:@selector(stopFirstRecording)
+                                                                     userInfo:nil
+                                                                      repeats:NO];
             
         } else if (newStatus == TPStateRecordingFirstCompleting) {
             
@@ -462,7 +493,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
-            [self transitionToStatus:TPStateRecordingSecondStarting after:TPRecordSecondGraceInterval];
+            secondRecordingStartGraceTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordSecondGraceInterval
+                                                                              target:self
+                                                                            selector:@selector(startSecondRecording)
+                                                                            userInfo:nil
+                                                                             repeats:NO];
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
             
@@ -474,7 +509,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             [_firstPlayer play];
             [self resumeProgressBar];
-            [self transitionToStatus:TPStateRecordingSecondCompleting after:TPRecordSecondInterval];
+            secondRecordingStopTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordSecondInterval
+                                                                        target:self
+                                                                      selector:@selector(stopSecondRecording)
+                                                                      userInfo:nil
+                                                                       repeats:NO];
             
         } else if (newStatus == TPStateRecordingSecondCompleting) {
             
@@ -501,13 +540,25 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     }
 }
 
--(void)transitionToStatus:(TPState)newStatus after:(NSTimeInterval)delay
+-(void)stopFirstRecording
 {
-    [self performBlock:^{
-        @synchronized (self) {
-            [self transitionToStatus:newStatus];
-        }
-    } afterDelay:delay];
+    @synchronized (self) {
+        [self transitionToStatus:TPStateRecordingFirstCompleting];
+    }
+}
+
+-(void)startSecondRecording
+{
+    @synchronized (self) {
+        [self transitionToStatus:TPStateRecordingSecondStarting];
+    }
+}
+
+-(void)stopSecondRecording
+{
+    @synchronized (self) {
+        [self transitionToStatus:TPStateRecordingSecondCompleting];
+    }
 }
 
 -(void)startSecondRecordingVisualCue
@@ -573,6 +624,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         @synchronized (self) {
             [self transitionToStatus:TPStateSessionStarted];
         }
+    }
+}
+
+- (void)coordinatorSessionDidInterrupt:(IDCaptureSessionAssetWriterCoordinator *)coordinator
+{
+    @synchronized (self) {
+        [self transitionToStatus:TPStateSessionStopping];
     }
 }
 
@@ -663,18 +721,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil];
     [alertController addAction:cancelAction];
     [self presentViewController:alertController animated:YES completion:nil];
-}
-
-- (void)performBlock:(void (^)(void))block
-          afterDelay:(NSTimeInterval)delay
-{
-    [self performSelector:@selector(fireBlockAfterDelay:)
-               withObject:[block copy]
-               afterDelay:delay];
-}
-
-- (void)fireBlockAfterDelay:(void (^)(void))block {
-    block();
 }
 
 +(void)addSpinnerAnimations:(CAShapeLayer*)spinnerLayer
