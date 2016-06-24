@@ -206,7 +206,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     AVCaptureDevice *videoDevice = [IDCaptureSessionAssetWriterCoordinator deviceWithMediaType:AVMediaTypeVideo preferringPosition:self.devicePosition];
     AVCaptureDeviceInput *videoDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:nil];
     if ( [self.captureSession canAddInput:videoDeviceInput] ) {
-        [IDCaptureSessionAssetWriterCoordinator setFlashMode:AVCaptureFlashModeOff forDevice:videoDevice];
         [self.captureSession addInput:videoDeviceInput];
         self.cameraDeviceInput = videoDeviceInput;
     }
@@ -214,7 +213,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         [self.captureSession addInput:self.cameraDeviceInput];
         NSLog(@"failed to set device position: %ld", (long)self.devicePosition);
     }
-    [[self class] configureCameraForHighFrameRate:videoDevice atPosition:self.devicePosition];
+    [[self class] configureCamera:videoDevice atPosition:self.devicePosition];
     
     // Audio
     if (_devicePosition == AVCaptureDevicePositionFront) {
@@ -518,21 +517,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     return captureDevice;
 }
 
-+ (void)setFlashMode:(AVCaptureFlashMode)flashMode forDevice:(AVCaptureDevice *)device
-{
-    if ( device.hasFlash && [device isFlashModeSupported:flashMode] ) {
-        NSError *error = nil;
-        if ( [device lockForConfiguration:&error] ) {
-            device.flashMode = flashMode;
-            [device unlockForConfiguration];
-        }
-        else {
-            NSLog( @"Could not lock device for configuration: %@", error );
-        }
-    }
-}
-
-+ (void)configureCameraForHighFrameRate:(AVCaptureDevice *)videoDevice atPosition:(AVCaptureDevicePosition)position
++ (void)configureCamera:(AVCaptureDevice *)videoDevice atPosition:(AVCaptureDevicePosition)position
 {
     for(AVCaptureDeviceFormat *vFormat in [videoDevice formats] )
     {
@@ -554,9 +539,14 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
                 videoDevice.activeFormat = vFormat;
                 [videoDevice setActiveVideoMinFrameDuration:CMTimeMake(1,60)];
                 [videoDevice setActiveVideoMaxFrameDuration:CMTimeMake(1,60)];
+                if ( videoDevice.hasFlash ) videoDevice.flashMode = AVCaptureFlashModeOff;
+                [videoDevice setAutomaticallyAdjustsVideoHDREnabled:NO];
+                [videoDevice setVideoHDREnabled:YES];
                 [videoDevice unlockForConfiguration];
                 
                 NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
+            } else {
+                NSLog( @"Could not lock device for configuration");
             }
         }
     }
