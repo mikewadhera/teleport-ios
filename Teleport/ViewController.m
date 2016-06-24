@@ -224,7 +224,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     {
         case TPCameraSetupResultSuccess:
         {
-            [self transitionToStatus:TPStateSessionStarting];
+            @synchronized (self) {
+                [self transitionToStatus:TPStateSessionStarting];
+            }
             break;
         }
         case TPCameraSetupResultCameraNotAuthorized:
@@ -240,7 +242,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [super viewDidDisappear:animated];
     
     if ( _setupResult == TPCameraSetupResultSuccess ) {
-        [self transitionToStatus:TPStateSessionStopping];
+        @synchronized (self) {
+            [self transitionToStatus:TPStateSessionStopping];
+        }
     }
 }
 
@@ -253,7 +257,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     else if (longPressGestureRecognizer.state == UIGestureRecognizerStateEnded)
     {
         if (_status == TPStateRecordingIdle) {
-            [self transitionToStatus:TPStateRecordingFirstStarting];
+            @synchronized (self) {
+                [self transitionToStatus:TPStateRecordingFirstStarting];
+            }
         }
     }
 }
@@ -325,6 +331,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     vc.placemarks = _lastKnownPlacemarks;
 }
 
+// call under @synchonized( self )
 -(void)transitionToStatus:(TPState)newStatus
 {
     TPState oldStatus = _status;
@@ -497,7 +504,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)transitionToStatus:(TPState)newStatus after:(NSTimeInterval)delay
 {
     [self performBlock:^{
-        [self transitionToStatus:newStatus];
+        @synchronized (self) {
+            [self transitionToStatus:newStatus];
+        }
     } afterDelay:delay];
 }
 
@@ -553,13 +562,17 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)coordinatorSessionConfigurationDidFail:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
-    [self transitionToStatus:TPStateSessionConfigurationFailed];
+    @synchronized (self) {
+        [self transitionToStatus:TPStateSessionConfigurationFailed];
+    }
 }
 
 -(void)coordinatorSessionDidFinishStarting:(IDCaptureSessionAssetWriterCoordinator *)coordinator running:(BOOL)isRunning
 {
     if (isRunning) {
-        [self transitionToStatus:TPStateSessionStarted];
+        @synchronized (self) {
+            [self transitionToStatus:TPStateSessionStarted];
+        }
     }
 }
 
@@ -574,9 +587,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 - (void)coordinatorDidBeginRecording:(IDCaptureSessionAssetWriterCoordinator *)coordinator
 {
     if (_status == TPStateRecordingFirstStarting) {
-        [self transitionToStatus:TPStateRecordingFirstStarted];
+        @synchronized (self) {
+            [self transitionToStatus:TPStateRecordingFirstStarted];
+        }
     } else if (_status == TPStateRecordingSecondStarting) {
-        [self transitionToStatus:TPStateRecordingSecondStarted];
+        @synchronized (self) {
+            [self transitionToStatus:TPStateRecordingSecondStarted];
+        }
     }
 }
 
@@ -590,10 +607,14 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     if ( success ) {
         if (_status == TPStateRecordingFirstCompleting) {
             _firstVideoURL = outputFileURL;
-            [self transitionToStatus:TPStateRecordingFirstCompleted];
+            @synchronized (self) {
+                [self transitionToStatus:TPStateRecordingFirstCompleted];
+            }
         } else if (_status == TPStateRecordingSecondCompleting) {
             _secondVideoURL = outputFileURL;
-            [self transitionToStatus:TPStateRecordingSecondCompleted];
+            @synchronized (self) {
+                [self transitionToStatus:TPStateRecordingSecondCompleted];
+            }
         }
     }
 }
