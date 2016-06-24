@@ -70,7 +70,6 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     _firstPlayerLayer.frame = topViewportRect;
     _firstPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    _firstPlayer.muted = YES; // Always muted
     
     _secondPlayer = [AVPlayer new];
     _secondPlayer.masterClock = syncClock;

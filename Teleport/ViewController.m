@@ -42,8 +42,8 @@ typedef void (^ AssertFromBlock)(TPState);
 #define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
 // Constants
-static const AVCaptureDevicePosition TPViewportTopCamera                = AVCaptureDevicePositionBack;
-static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionFront;
+static const AVCaptureDevicePosition TPViewportTopCamera                = AVCaptureDevicePositionFront;
+static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
 static const NSTimeInterval          TPRecordFirstInterval              = 5.2;
@@ -358,6 +358,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
             [self moveLayer:_previewLayer to:TPRecordFirstViewport];
             [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
+            [CATransaction begin];
+            [CATransaction setDisableActions:YES];
             [_progressBarTrackLayer setHidden:NO];
             [_progressBarLayer setHidden:YES];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
@@ -368,12 +370,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
             _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
             _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
-            
             // These get hidden if we're coming back from preview
             if (_sessionCoordinator.devicePosition != TPViewportTopCamera) {
                 [_previewLayer setHidden:YES];
                 [_firstPlayerLayer setHidden:YES];
             }
+            [CATransaction commit];
             
             [_sessionCoordinator startRunning];
             
