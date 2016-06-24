@@ -55,7 +55,6 @@ static const CGFloat                 TPSpinnerBarWidth                  = 2.0f;
 #define                              TPSpinnerRadius                    sqrt(hypotf(bounds.size.width, bounds.size.height))*3.0
 static const NSTimeInterval          TPSpinnerInterval                  = 0.3f;
 #define                              TPSpinnerBarColor                  [UIColor colorWithWhite:0 alpha:0.25]
-static const CGFloat                 TPEncodeBitrate                    = 6000000;
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
@@ -637,8 +636,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings
 {
     return @{
-              AVVideoCodecKey : AVVideoCodecH264,
-              AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(TPEncodeBitrate) }
+              AVVideoCodecKey : AVVideoCodecH264
             };
 }
 
