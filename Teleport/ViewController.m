@@ -42,23 +42,25 @@ typedef void (^ AssertFromBlock)(TPState);
 #define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
 // Constants
-static const AVCaptureDevicePosition TPViewportTopCamera        = AVCaptureDevicePositionBack;
-static const AVCaptureDevicePosition TPViewportBottomCamera     = AVCaptureDevicePositionFront;
-static const TPViewport TPRecordFirstViewport                   = TPViewportTop;
-static const TPViewport TPRecordSecondViewport                  = TPViewportBottom;
-static const NSTimeInterval TPRecordFirstInterval               = 5.2;
-static const NSTimeInterval TPRecordSecondInterval              = TPRecordFirstInterval;
-static const NSTimeInterval TPRecordSecondGraceInterval         = 0.8;
-static const NSTimeInterval TPRecordSecondGraceOpacity          = 0.94;
-static const CGFloat TPProgressBarWidth                         = 39.0f;
-#define      TPProgressBarTrackColor                            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
-#define      TPProgressBarTrackHighlightColor                   [UIColor redColor]
-#define      TPProgressBarColor                                 [UIColor redColor]
-static const CGFloat TPSpinnerBarWidth                          = 4.0f;
-#define      TPSpinnerBarColor                                  [UIColor orangeColor]
-static const CGFloat TPEncodeBitrate                            = 6000000;
-#define      TPLocationAccuracy                                 kCLLocationAccuracyBestForNavigation
-static const CLLocationDistance TPLocationDistanceFilter        = 100;
+static const AVCaptureDevicePosition TPViewportTopCamera                = AVCaptureDevicePositionBack;
+static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionFront;
+static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
+static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.2;
+static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.8;
+static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.94;
+static const CGFloat                 TPProgressBarWidth                 = 39.0f;
+#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
+#define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
+#define                              TPProgressBarColor                 [UIColor redColor]
+static const CGFloat                 TPSpinnerBarWidth                  = 2.0f;
+#define                              TPSpinnerRadius                    sqrt(hypotf(bounds.size.width, bounds.size.height))*3.0
+static const NSTimeInterval          TPSpinnerInterval                  = 0.6f;
+#define                              TPSpinnerBarColor                  [UIColor colorWithWhite:0 alpha:0.25]
+static const CGFloat                 TPEncodeBitrate                    = 6000000;
+#define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
+static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
 
 @interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate>
@@ -201,10 +203,11 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     _secondRecordingVisualCueSpinnerLayer.fillColor = nil;
     CGRect bounds = bottomViewportRect;
     CGPoint center = CGPointMake(bounds.size.width/2, bounds.size.height/2);
-    CGFloat radius = 44;
-    CGFloat startAngle = 0;
-    CGFloat endAngle = startAngle + (M_PI*2);
-    UIBezierPath *spinPath = [UIBezierPath bezierPathWithArcCenter:CGPointZero radius:radius startAngle:startAngle endAngle:endAngle clockwise:true];
+    UIBezierPath *spinPath = [UIBezierPath bezierPathWithArcCenter:CGPointZero
+                                                            radius:TPSpinnerRadius
+                                                        startAngle:0
+                                                          endAngle:(M_PI*2)
+                                                         clockwise:true];
     _secondRecordingVisualCueSpinnerLayer.path = spinPath.CGPath;
     _secondRecordingVisualCueSpinnerLayer.position = center;
 }
@@ -662,32 +665,32 @@ static const CLLocationDistance TPLocationDistanceFilter        = 100;
     
     CABasicAnimation *headAnimation = [CABasicAnimation animation];
     headAnimation.keyPath = @"strokeStart";
-    headAnimation.duration = 1;
+    headAnimation.duration = TPSpinnerInterval;
     headAnimation.fromValue = @0;
     headAnimation.toValue = @.25;
     
     CABasicAnimation *tailAnimation = [CABasicAnimation animation];
     tailAnimation.keyPath = @"strokeEnd";
-    tailAnimation.duration = 1;
+    tailAnimation.duration = TPSpinnerInterval;
     tailAnimation.fromValue = @0;
     tailAnimation.toValue = @1;
     
     CABasicAnimation *endHeadAnimation = [CABasicAnimation animation];
     endHeadAnimation.keyPath = @"strokeStart";
-    endHeadAnimation.beginTime = 1.;
-    endHeadAnimation.duration = 1;
+    endHeadAnimation.beginTime = TPSpinnerInterval;
+    endHeadAnimation.duration = TPSpinnerInterval;
     endHeadAnimation.fromValue = @.25;
     endHeadAnimation.toValue = @1;
     
     CABasicAnimation *endTailAnimation = [CABasicAnimation animation];
     endTailAnimation.keyPath = @"strokeEnd";
-    endTailAnimation.beginTime = 1;
-    endTailAnimation.duration = 1;
+    endTailAnimation.beginTime = TPSpinnerInterval;
+    endTailAnimation.duration = TPSpinnerInterval;
     endTailAnimation.fromValue = @1;
     endTailAnimation.toValue = @1;
     
     CAAnimationGroup *animations = [CAAnimationGroup animation];
-    animations.duration = 2;
+    animations.duration = TPSpinnerInterval*2;
     animations.animations = @[
                               rotateAnimation,
                               headAnimation,
