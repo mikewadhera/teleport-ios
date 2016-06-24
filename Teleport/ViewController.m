@@ -45,15 +45,15 @@ static const TPViewport              TPRecordFirstViewport              = TPView
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
 static const NSTimeInterval          TPRecordFirstInterval              = 5.2;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.8;
-static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.94;
-static const CGFloat                 TPProgressBarWidth                 = 39.0f;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.0;
+static const NSTimeInterval          TPRecordSecondGraceOpacity         = 1.0;
+#define                              TPProgressBarWidth                 floorf((self.view.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
 #define                              TPProgressBarColor                 [UIColor redColor]
 static const CGFloat                 TPSpinnerBarWidth                  = 2.0f;
 #define                              TPSpinnerRadius                    sqrt(hypotf(bounds.size.width, bounds.size.height))*3.0
-static const NSTimeInterval          TPSpinnerInterval                  = 0.6f;
+static const NSTimeInterval          TPSpinnerInterval                  = 0.3f;
 #define                              TPSpinnerBarColor                  [UIColor colorWithWhite:0 alpha:0.25]
 static const CGFloat                 TPEncodeBitrate                    = 6000000;
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
