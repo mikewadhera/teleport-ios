@@ -47,7 +47,7 @@ static const NSTimeInterval          TPRecordFirstInterval              = 5.2;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 1.0;
-#define                              TPProgressBarWidth                 floorf((self.view.bounds.size.width*0.10))
+#define                              TPProgressBarWidth                 10+floorf((self.view.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
 #define                              TPProgressBarColor                 [UIColor redColor]
@@ -276,7 +276,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 {
     if (longPressGestureRecognizer.state == UIGestureRecognizerStateBegan || longPressGestureRecognizer.state == UIGestureRecognizerStateChanged)
     {
-        [_progressBarTrackLayer setStrokeColor:TPProgressBarTrackHighlightColor.CGColor];
+        //[_progressBarTrackLayer setStrokeColor:TPProgressBarTrackHighlightColor.CGColor];
     }
     else if (longPressGestureRecognizer.state == UIGestureRecognizerStateEnded)
     {
@@ -636,7 +636,10 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 - (NSDictionary*)coordinatorDesiredVideoOutputSettings
 {
     return @{
-              AVVideoCodecKey : AVVideoCodecH264
+              AVVideoCodecKey : AVVideoCodecH264,
+              AVVideoWidthKey : @(1280),
+              AVVideoHeightKey : @(960),
+              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill
             };
 }
 
