@@ -436,6 +436,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingFirstStarting) {
             
             assertFrom(TPStateRecordingIdle);
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             [_progressBarTrackLayer setHidden:YES];
             [_progressBarLayer setHidden:NO];
             [_sessionCoordinator startRecording];

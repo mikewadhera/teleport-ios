@@ -15,6 +15,8 @@
 		FB0D9D601D0622DA0024CDC4 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */; };
 		FB0D9D621D0622DA0024CDC4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */; };
 		FB0D9D651D0622DA0024CDC4 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */; };
+		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
+		FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AD1D21FAA8001F1F55 /* red@2x.png */; };
 		FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = FB6EDDB61D1B4731008410FD /* TPGeocoder.m */; };
 		FB6EDDB91D1B6221008410FD /* send@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDB81D1B6221008410FD /* send@2x.png */; };
 		FB6EDDC31D1B70E5008410FD /* check@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDC21D1B70E5008410FD /* check@2x.png */; };
@@ -42,6 +44,8 @@
 		FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FB0D9D641D0622DA0024CDC4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FB0D9D661D0622DA0024CDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FB35E0AC1D21FAA8001F1F55 /* green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "green@2x.png"; sourceTree = "<group>"; };
+		FB35E0AD1D21FAA8001F1F55 /* red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "red@2x.png"; sourceTree = "<group>"; };
 		FB6EDDB51D1B4731008410FD /* TPGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TPGeocoder.h; sourceTree = "<group>"; };
 		FB6EDDB61D1B4731008410FD /* TPGeocoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TPGeocoder.m; sourceTree = "<group>"; };
 		FB6EDDB81D1B6221008410FD /* send@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "send@2x.png"; sourceTree = "<group>"; };
@@ -101,6 +105,8 @@
 		FB0D9D541D0622DA0024CDC4 /* Teleport */ = {
 			isa = PBXGroup;
 			children = (
+				FB35E0AC1D21FAA8001F1F55 /* green@2x.png */,
+				FB35E0AD1D21FAA8001F1F55 /* red@2x.png */,
 				FB6EDDCA1D1B9061008410FD /* x@2x.png */,
 				FB6EDDC81D1B8F09008410FD /* close@2x.png */,
 				FB6EDDC61D1B87C7008410FD /* chevron@2x.png */,
@@ -196,6 +202,8 @@
 				FB0D9D621D0622DA0024CDC4 /* Assets.xcassets in Resources */,
 				FB0D9D601D0622DA0024CDC4 /* Main.storyboard in Resources */,
 				FB6EDDB91D1B6221008410FD /* send@2x.png in Resources */,
+				FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */,
+				FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */,
 				FB6EDDC31D1B70E5008410FD /* check@2x.png in Resources */,
 				FB6EDDC71D1B87C7008410FD /* chevron@2x.png in Resources */,
 				FB6EDDC91D1B8F09008410FD /* close@2x.png in Resources */,

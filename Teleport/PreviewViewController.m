@@ -85,41 +85,30 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     
     // Buttons
     _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    CLPlacemark *mark = [_placemarks firstObject];
-    NSDate *date = [NSDate date];
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    [dateFormatter setDateFormat:@"h:mm a"];
-    NSString *title = [NSString stringWithFormat:@"Share 📍%@, %@  🕒 %@ ", [mark subLocality], [mark subAdministrativeArea], [dateFormatter stringFromDate:date]];
-    NSMutableAttributedString *mutAttrTextViewString = [[NSMutableAttributedString alloc] initWithString:title];
-    [mutAttrTextViewString setAttributes:@{ NSFontAttributeName : [UIFont systemFontOfSize:12.0],
-                                            NSForegroundColorAttributeName : [UIColor whiteColor]
-                                           } range:NSMakeRange(0, title.length)];
-    [mutAttrTextViewString setAttributes:@{ NSFontAttributeName : [UIFont boldSystemFontOfSize:12.0],
-                                            NSForegroundColorAttributeName : [UIColor whiteColor]
-                                            } range:[title rangeOfString:@"Share "]];
-    [_advanceButton setBackgroundColor:[UIColor colorWithWhite:0.0 alpha:0.35]];
-    _advanceButton.layer.borderWidth = 2.0f;
-    _advanceButton.layer.borderColor = [[UIColor colorWithWhite:1.0 alpha:1] CGColor];
-    [_advanceButton setAttributedTitle:mutAttrTextViewString forState:UIControlStateNormal];
-    _advanceButton.titleLabel.font = [UIFont boldSystemFontOfSize:11];
-    [_advanceButton setFrame:CGRectMake(10, self.view.bounds.size.height-44-10, self.view.bounds.size.width-20, 44)];
-    _advanceButton.alpha = 0.0f;
+    [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2+55, self.view.bounds.size.height, 68, 68)];
+    [_advanceButton setImage:[UIImage imageNamed:@"green.png"] forState:UIControlStateNormal];
+    [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
+    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
+    [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
+    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
     [_playerView addSubview:_advanceButton];
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _cancelButton.alpha = 0;
-    UIImage *cancelImage = [UIImage imageNamed:@"x.png"];
+    UIImage *cancelImage = [UIImage imageNamed:@"red.png"];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
-    [_cancelButton setFrame:CGRectMake(25, 24, 44, 44)];
+    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2-55, self.view.bounds.size.height, 68, 68)];
+    [_cancelButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
+    [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(cancel) forControlEvents:UIControlEventTouchUpInside];
+    [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
     [_playerView addSubview:_cancelButton];
     
     [self addVideosToPlayers];
     [self playVideos];
     
-    [UIView animateWithDuration:1.0 delay:0.2 options:UIViewAnimationOptionCurveEaseOut animations:^{
-        _advanceButton.alpha = 1.0;
-        _cancelButton.alpha = 1.0;
+    [UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+        [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2+55, self.view.bounds.size.height-68-26, 68, 68)];
+        [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2-55, self.view.bounds.size.height-68-26, 68, 68)];
     } completion:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
@@ -132,7 +121,14 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 -(void)cancel
 {
-    [self.navigationController popViewControllerAnimated:NO];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        [self.navigationController popViewControllerAnimated:NO];
+    });
+}
+
+-(void)advance
+{
+    
 }
 
 -(void)addVideosToPlayers
@@ -184,6 +180,20 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
             [self playAt:time player:player];
         });
     }
+}
+
+-(void)springOut:(UIButton*)sender
+{
+    [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
+        sender.layer.transform = CATransform3DMakeScale(1.3, 1.3, 1.0);
+    } completion:nil];
+}
+
+-(void)restore:(UIButton*)sender
+{
+    [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
+        sender.layer.transform = CATransform3DMakeScale(1.0, 1.0, 1.0);
+    } completion:nil];
 }
 
 @end
