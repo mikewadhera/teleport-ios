@@ -43,7 +43,7 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 5.2;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.6;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
@@ -638,9 +638,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 {
     return @{
               AVVideoCodecKey : AVVideoCodecH264,
-              AVVideoWidthKey : @(1280),
-              AVVideoHeightKey : @(960),
-              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill
+//              AVVideoWidthKey : @(1280),
+//              AVVideoHeightKey : @(960),
+//              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill
             };
 }
 

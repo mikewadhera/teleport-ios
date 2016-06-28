@@ -5,7 +5,7 @@
 
 #import "PreviewViewController.h"
 
-static const NSTimeInterval TPPlaybackInterval = 5.0;
+static const NSTimeInterval TPPlaybackInterval = 5.5;
 static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 @interface PreviewViewController ()

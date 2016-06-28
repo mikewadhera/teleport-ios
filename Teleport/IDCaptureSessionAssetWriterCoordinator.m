@@ -251,7 +251,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     _videoConnection = [_videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
     if ( [_videoConnection isVideoStabilizationSupported] ) {
-        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeCinematic];
+        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeStandard];
     }
     if (_devicePosition == AVCaptureDevicePositionFront) {
         if ( [_videoConnection isVideoOrientationSupported] ) {
