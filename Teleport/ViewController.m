@@ -94,6 +94,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     NSTimer *firstRecordingStopTimer;
     NSTimer *secondRecordingStartGraceTimer;
     NSTimer *secondRecordingStopTimer;
+    UILongPressGestureRecognizer *tapRecognizer;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -187,7 +188,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
     [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
     _progressBarTrackLayer.path = _progressBarLayer.path;
-    UILongPressGestureRecognizer *tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
+    tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
     tapRecognizer.minimumPressDuration = 0;
     [self.view addGestureRecognizer:tapRecognizer];
     
@@ -284,6 +285,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingFirstStarting];
             }
+        } else {
+            // HACK: We really shouldn't be dependant on temporal ordering of states
+            @synchronized (self) {
+                [self transitionToStatus:TPStateSessionStopping];
+                [self transitionToStatus:TPStateSessionStarting];
+            }
         }
     }
 }
@@ -378,6 +385,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
+            [tapRecognizer setEnabled:NO];
             _lastKnownLocation = nil;
             _lastKnownDirection = kCLHeadingFilterNone;
             _lastKnownPlacemarks = nil;
@@ -394,6 +402,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [_progressBarTrackLayer setHidden:NO];
             [_progressBarLayer setHidden:YES];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
+            [_secondRecordingVisualCueLayer removeAllAnimations];
             [_secondRecordingVisualCueLayer setHidden:NO];
             [_secondRecordingVisualCueLayer setOpacity:1.0];
             [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
@@ -431,6 +440,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                 [_previewLayer setHidden:NO];
                 [_firstPlayerLayer setHidden:NO];
             }
+            [tapRecognizer setEnabled:YES];
             [self transitionToStatus:TPStateRecordingIdle];
             
         } else if (newStatus == TPStateRecordingFirstStarting) {
