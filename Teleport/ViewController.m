@@ -43,15 +43,15 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 5.6;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.5;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
-static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
-#define                              TPProgressBarWidth                 10+floorf((self.view.bounds.size.width*0.10))
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.2;
+static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.8;
+#define                              TPProgressBarWidth                 8+floorf((self.view.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
 #define                              TPProgressBarColor                 [UIColor redColor]
-static const CGFloat                 TPSpinnerBarWidth                  = 2.0f;
+static const CGFloat                 TPSpinnerBarWidth                  = 0.0f;
 #define                              TPSpinnerRadius                    sqrt(hypotf(bounds.size.width, bounds.size.height))*3.0
 static const NSTimeInterval          TPSpinnerInterval                  = 0.3f;
 #define                              TPSpinnerBarColor                  [UIColor colorWithWhite:0 alpha:0.25]
@@ -94,7 +94,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     NSTimer *firstRecordingStopTimer;
     NSTimer *secondRecordingStartGraceTimer;
     NSTimer *secondRecordingStopTimer;
-    UILongPressGestureRecognizer *tapRecognizer;
+    UITapGestureRecognizer *tapRecognizer;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -188,8 +188,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_progressBarTrackLayer setLineWidth:TPProgressBarWidth];
     [_progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
     _progressBarTrackLayer.path = _progressBarLayer.path;
-    tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
-    tapRecognizer.minimumPressDuration = 0;
+    tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectRecord:)];
     [self.view addGestureRecognizer:tapRecognizer];
     
     // Second Recording Visual Cue
@@ -273,24 +272,17 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
-- (void)longPress:(UILongPressGestureRecognizer *)longPressGestureRecognizer
+- (void)didSelectRecord:(UITapGestureRecognizer *)recognizer
 {
-    if (longPressGestureRecognizer.state == UIGestureRecognizerStateBegan || longPressGestureRecognizer.state == UIGestureRecognizerStateChanged)
-    {
-        //[_progressBarTrackLayer setStrokeColor:TPProgressBarTrackHighlightColor.CGColor];
-    }
-    else if (longPressGestureRecognizer.state == UIGestureRecognizerStateEnded)
-    {
-        if (_status == TPStateRecordingIdle) {
-            @synchronized (self) {
-                [self transitionToStatus:TPStateRecordingFirstStarting];
-            }
-        } else {
-            // HACK: We really shouldn't be dependant on temporal ordering of states
-            @synchronized (self) {
-                [self transitionToStatus:TPStateSessionStopping];
-                [self transitionToStatus:TPStateSessionStarting];
-            }
+    if (_status == TPStateRecordingIdle) {
+        @synchronized (self) {
+            [self transitionToStatus:TPStateRecordingFirstStarting];
+        }
+    } else {
+        // HACK: We really shouldn't be dependant on temporal ordering of states
+        @synchronized (self) {
+            [self transitionToStatus:TPStateSessionStopping];
+            [self transitionToStatus:TPStateSessionStarting];
         }
     }
 }

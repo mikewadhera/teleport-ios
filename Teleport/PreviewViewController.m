@@ -5,7 +5,8 @@
 
 #import "PreviewViewController.h"
 
-static const NSTimeInterval TPPlaybackInterval = 5.5;
+#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, CMTimeMake(5.4, 1))
+#define TPSecondPlaybackTimeRange CMTimeRangeMake(CMTimeMake(2, 10), CMTimeMake(5.2, 1))
 static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 @interface PreviewViewController ()
@@ -85,7 +86,7 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     
     // Buttons
     _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2+55, self.view.bounds.size.height, 68, 68)];
+    [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, self.view.bounds.size.height, 65, 65)];
     [_advanceButton setImage:[UIImage imageNamed:@"green.png"] forState:UIControlStateNormal];
     [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
     [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
@@ -96,7 +97,7 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
     UIImage *cancelImage = [UIImage imageNamed:@"red.png"];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
-    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2-55, self.view.bounds.size.height, 68, 68)];
+    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, self.view.bounds.size.height, 65, 65)];
     [_cancelButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
     [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(cancel) forControlEvents:UIControlEventTouchUpInside];
@@ -107,8 +108,8 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     [self playVideos];
     
     [UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-        [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2+55, self.view.bounds.size.height-68-26, 68, 68)];
-        [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-68/2-55, self.view.bounds.size.height-68-26, 68, 68)];
+        [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, self.view.bounds.size.height-65-26, 65, 65)];
+        [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, self.view.bounds.size.height-65-26, 65, 65)];
     } completion:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
@@ -138,10 +139,9 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     AVMutableComposition *secondComposition = [AVMutableComposition composition];
     AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
-    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(TPPlaybackInterval, 1));
     for (NSUInteger i = 0; i < TPPlaybackMaxLoopCount; i++) {
-        [firstComposition insertTimeRange:timeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
-        [secondComposition insertTimeRange:timeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
+        [firstComposition insertTimeRange:TPFirstPlaybackTimeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
+        [secondComposition insertTimeRange:TPSecondPlaybackTimeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
     }
     
     // Orientation fix
