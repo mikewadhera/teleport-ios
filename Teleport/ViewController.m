@@ -45,8 +45,8 @@ static const TPViewport              TPRecordFirstViewport              = TPView
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
 static const NSTimeInterval          TPRecordFirstInterval              = 5.2;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.0;
-static const NSTimeInterval          TPRecordSecondGraceOpacity         = 1.0;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
+static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 #define                              TPProgressBarWidth                 10+floorf((self.view.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
