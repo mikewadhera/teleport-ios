@@ -5,8 +5,8 @@
 
 #import "PreviewViewController.h"
 
-#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, CMTimeMake(5.4, 1))
-#define TPSecondPlaybackTimeRange CMTimeRangeMake(CMTimeMake(2, 10), CMTimeMake(5.2, 1))
+#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, CMTimeMake(6.0, 1))
+#define TPSecondPlaybackTimeRange CMTimeRangeMake(CMTimeMake(1, 10), CMTimeMake(6.1, 1))
 static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 @interface PreviewViewController ()
@@ -107,10 +107,10 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     [self addVideosToPlayers];
     [self playVideos];
     
-    [UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-        [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, self.view.bounds.size.height-65-26, 65, 65)];
-        [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, self.view.bounds.size.height-65-26, 65, 65)];
-    } completion:nil];
+    //[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+        [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, topViewH-65/2, 65, 65)];
+        [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, topViewH-65/2, 65, 65)];
+    //} completion:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
