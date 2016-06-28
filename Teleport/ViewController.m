@@ -578,7 +578,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _secondRecordingVisualCueLayer.backgroundColor = [UIColor whiteColor].CGColor;
     anime.toValue = (id)[UIColor whiteColor].CGColor;
     anime.duration = TPRecordFirstInterval;
-    anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+    anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
     //anime.autoreverses = YES;
     [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
 }
