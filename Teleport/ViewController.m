@@ -496,8 +496,38 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             assertFrom(TPStateRecordingSecondCompleting);
             [_recordBarView resume];
-            [self transitionToStatus:TPStateRecordingCompleted];
-            
+            AVURLAsset *asset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
+            AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
+            NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
+            NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
+            exportSession.outputURL = [NSURL fileURLWithPath:outputFilePath];
+            exportSession.outputFileType = AVFileTypeQuickTimeMovie;
+            CMTimeRange range = CMTimeRangeMake(CMTimeMake(TPRecordSecondGraceInterval*10, 10), asset.duration);
+            exportSession.timeRange = range;
+            [exportSession exportAsynchronouslyWithCompletionHandler:^(void){
+                switch (exportSession.status)
+                {
+                    case
+                    AVAssetExportSessionStatusCompleted:
+                    {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            _secondVideoURL = exportSession.outputURL;
+                            [self transitionToStatus:TPStateRecordingCompleted];
+                        });
+                    }
+                        
+                        break;
+                    case AVAssetExportSessionStatusFailed:
+                        NSLog(@"Trim failed with error ===>>> %@",exportSession.error);
+                        break;
+                    case AVAssetExportSessionStatusCancelled:
+                        NSLog(@"Canceled:%@",exportSession.error);
+                        break;
+                    default:
+                        break;
+                }
+                
+            }];
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);

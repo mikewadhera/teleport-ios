@@ -5,8 +5,8 @@
 
 #import "PreviewViewController.h"
 
-#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, CMTimeMake(6, 1))
-#define TPSecondPlaybackTimeRange CMTimeRangeMake(CMTimeMake(5, 10), CMTimeMake(6, 1))
+#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, firstAsset.duration)
+#define TPSecondPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, secondAsset.duration)
 static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 @interface PreviewViewController ()
