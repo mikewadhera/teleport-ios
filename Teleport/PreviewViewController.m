@@ -5,8 +5,8 @@
 
 #import "PreviewViewController.h"
 
-#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, CMTimeMake(6.0, 1))
-#define TPSecondPlaybackTimeRange CMTimeRangeMake(CMTimeMake(1, 10), CMTimeMake(6.1, 1))
+#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, CMTimeMake(6, 1))
+#define TPSecondPlaybackTimeRange CMTimeRangeMake(CMTimeMake(5, 10), CMTimeMake(6, 1))
 static const NSInteger TPPlaybackMaxLoopCount = 100;
 
 @interface PreviewViewController ()
@@ -139,6 +139,8 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     AVMutableComposition *secondComposition = [AVMutableComposition composition];
     AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
+    NSLog(@"%lld", firstAsset.duration.value/firstAsset.duration.timescale);
+    NSLog(@"%lld", secondAsset.duration.value/secondAsset.duration.timescale);
     for (NSUInteger i = 0; i < TPPlaybackMaxLoopCount; i++) {
         [firstComposition insertTimeRange:TPFirstPlaybackTimeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
         [secondComposition insertTimeRange:TPSecondPlaybackTimeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
