@@ -512,8 +512,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                     case
                     AVAssetExportSessionStatusCompleted:
                     {
+                        [[NSFileManager defaultManager] removeItemAtPath:[_secondVideoURL path] error:nil];
+                        _secondVideoURL = exportSession.outputURL;
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            _secondVideoURL = exportSession.outputURL;
                             [self transitionToStatus:TPStateRecordingCompleted];
                         });
                     }

@@ -124,6 +124,8 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         [self.navigationController popViewControllerAnimated:NO];
+        [[NSFileManager defaultManager] removeItemAtPath:[_firstVideoURL path] error:nil];
+        [[NSFileManager defaultManager] removeItemAtPath:[_secondVideoURL path] error:nil];
     });
 }
 
