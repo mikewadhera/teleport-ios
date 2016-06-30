@@ -502,7 +502,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
             exportSession.outputURL = [NSURL fileURLWithPath:outputFilePath];
             exportSession.outputFileType = AVFileTypeQuickTimeMovie;
-            CMTimeRange range = CMTimeRangeMake(CMTimeMake(TPRecordSecondGraceInterval*10, 10), asset.duration);
+            CMTimeRange range = CMTimeRangeMake(CMTimeMake(TPRecordSecondGraceInterval*10, 10),
+                                                CMTimeMake(TPRecordSecondInterval*10, 10));
             exportSession.timeRange = range;
             [exportSession exportAsynchronouslyWithCompletionHandler:^(void){
                 switch (exportSession.status)
