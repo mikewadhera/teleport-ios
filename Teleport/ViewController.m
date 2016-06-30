@@ -43,9 +43,9 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 6.1;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.7;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.6;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 #define                              TPProgressBarWidth                 10+floorf((self.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
@@ -459,7 +459,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             // which can take 600ms+ on iPhone6
             [_sessionCoordinator setDevicePosition:targetCamera];
             
-            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            [_firstPlayer play];
+            [_firstPlayer pause];
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
@@ -633,7 +634,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
               AVVideoCodecKey : AVVideoCodecH264,
               AVVideoWidthKey : @(1280),
               AVVideoHeightKey : @(960),
-              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill
+              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
+              AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(5000000),
+                                                       AVVideoExpectedSourceFrameRateKey : @(60),
+                                                       AVVideoMaxKeyFrameIntervalKey : @(60),
+                                                        AVVideoAllowFrameReorderingKey : @YES }
+
             };
 }
 
@@ -841,6 +847,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)resume
 {
+    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
     CFTimeInterval pausedTime = [progressBarLayer timeOffset];
     progressBarLayer.speed = 1.0;
     progressBarLayer.timeOffset = 0.0;

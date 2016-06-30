@@ -5,9 +5,9 @@
 
 #import "PreviewViewController.h"
 
-#define TPFirstPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, firstAsset.duration)
-#define TPSecondPlaybackTimeRange CMTimeRangeMake(kCMTimeZero, secondAsset.duration)
-static const NSInteger TPPlaybackMaxLoopCount = 100;
+
+static const NSTimeInterval   TPPlaybackInterval      = 5.5;
+static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 
 @interface PreviewViewController ()
 
@@ -141,9 +141,10 @@ static const NSInteger TPPlaybackMaxLoopCount = 100;
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
     NSLog(@"%lld", firstAsset.duration.value/firstAsset.duration.timescale);
     NSLog(@"%lld", secondAsset.duration.value/secondAsset.duration.timescale);
+    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(TPPlaybackInterval*10, 10));
     for (NSUInteger i = 0; i < TPPlaybackMaxLoopCount; i++) {
-        [firstComposition insertTimeRange:TPFirstPlaybackTimeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
-        [secondComposition insertTimeRange:TPSecondPlaybackTimeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
+        [firstComposition insertTimeRange:timeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
+        [secondComposition insertTimeRange:timeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
     }
     
     // Orientation fix
