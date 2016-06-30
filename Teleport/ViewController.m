@@ -48,7 +48,7 @@ static const NSTimeInterval          TPRecordSecondInterval             = TPReco
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.6;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 #define                              TPProgressBarWidth                 10+floorf((self.bounds.size.width*0.10))
-#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
+#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.5]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
 #define                              TPProgressBarColor                 [UIColor redColor]
 static const CGFloat                 TPSpinnerBarWidth                  = 5.0f;
@@ -90,7 +90,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) TPGeocoder *geocoder;
 
 @property (nonatomic) TPState status;
-@property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
+@property (nonatomic) CAReplicatorLayer *previewLayer;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) RecordProgressBarView *recordBarView;
@@ -98,6 +98,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) NSURL *secondVideoURL;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
+@property (nonatomic) UIVisualEffectView *blackEffectView;
 
 @end
 
@@ -110,6 +111,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     NSTimer *firstRecordingStopTimer;
     NSTimer *secondRecordingStartGraceTimer;
     NSTimer *secondRecordingStopTimer;
+    UIVisualEffectView *efv;
+    UIView *blackView;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -120,6 +123,19 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [super viewDidLoad];
     
     self.view.backgroundColor = [UIColor blackColor];
+    
+    // Calculate Viewports
+    int topViewW = self.view.frame.size.width;
+    int topViewH = ceil(self.view.frame.size.height / 2.0);
+    int topViewX = 0;
+    int topViewY = 0;
+    topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
+    
+    int bottomViewW = self.view.frame.size.width;
+    int bottomViewH = ceil(self.view.frame.size.height / 2.0);
+    int bottomViewX = 0;
+    int bottomViewY = floor(self.view.frame.size.height / 2.0);
+    bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
     // Create the location manager (needs to happen before auth check)
     _locationManager = [[CLLocationManager alloc] init];
@@ -150,33 +166,38 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_sessionCoordinator setDelegate:self callbackQueue:dispatch_get_main_queue()];
     
     // Create the preview
-    _previewLayer = _sessionCoordinator.previewLayer;
-    _previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    _previewLayer = [CAReplicatorLayer layer];
+    _previewLayer.frame = CGRectMake(0.0, 0.0, self.view.bounds.size.width, self.view.bounds.size.height);
+    _previewLayer.anchorPoint = CGPointZero;
+    _previewLayer.position = CGPointZero;
+    _previewLayer.instanceCount = 2;
+    CATransform3D transform = CATransform3DIdentity;
+    transform = CATransform3DTranslate(transform, 0, (2*topViewportRect.size.height)-1, 0);
+    transform = CATransform3DScale(transform, 3, -1, 1);
+    _previewLayer.instanceTransform = transform;
+    _previewLayer.instanceDelay = 0.01;
+    _previewLayer.instanceAlphaOffset = -0.33;
     [_previewLayer setBackgroundColor:[[UIColor blackColor] CGColor]];
+    
+    
+    AVCaptureVideoPreviewLayer *sessionPreviewLayer = _sessionCoordinator.previewLayer;
+    sessionPreviewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    sessionPreviewLayer.frame = topViewportRect;
+    sessionPreviewLayer.anchorPoint = CGPointZero;
+    sessionPreviewLayer.position = CGPointZero;
+    [_previewLayer addSublayer:sessionPreviewLayer];
+    
     
     // Create the player
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
-    // Calculate Viewports
-    int topViewW = self.view.frame.size.width;
-    int topViewH = ceil(self.view.frame.size.height / 2.0);
-    int topViewX = 0;
-    int topViewY = 0;
-    topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
-    
-    int bottomViewW = self.view.frame.size.width;
-    int bottomViewH = ceil(self.view.frame.size.height / 2.0);
-    int bottomViewX = 0;
-    int bottomViewY = floor(self.view.frame.size.height / 2.0);
-    bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
-    
     // Second Recording Visual Cue
     _secondRecordingVisualCueLayer = [CALayer layer];
     // Spinner
     _secondRecordingVisualCueSpinnerLayer = [CAShapeLayer layer];
-    [_secondRecordingVisualCueLayer addSublayer:_secondRecordingVisualCueSpinnerLayer];
+    //[_secondRecordingVisualCueLayer addSublayer:_secondRecordingVisualCueSpinnerLayer];
     _secondRecordingVisualCueSpinnerLayer.lineWidth = TPSpinnerBarWidth;
     _secondRecordingVisualCueSpinnerLayer.lineCap = kCALineCapRound;
     _secondRecordingVisualCueSpinnerLayer.fillColor = nil;
@@ -190,13 +211,27 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _secondRecordingVisualCueSpinnerLayer.path = spinPath.CGPath;
     _secondRecordingVisualCueSpinnerLayer.position = center;
     
+    // Effect Views
+    _blackEffectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+    efv = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+    blackView = [[UIView alloc] initWithFrame:bottomViewportRect];
+    blackView.backgroundColor = [UIColor blackColor];
+    
+    _blackEffectView.frame = bottomViewportRect;
+    efv.frame = bottomViewportRect;
+    
+    [efv.contentView.layer addSublayer:_secondRecordingVisualCueSpinnerLayer];
+    
     // Record Bar
     _recordBarView = [[RecordProgressBarView alloc] initWithFrame:self.view.bounds];
     _recordBarView.delegate = self;
     
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
     [self.view.layer insertSublayer:_previewLayer atIndex:1];
-    [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
+    //[self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
+    [self.view addSubview:_blackEffectView];
+    [self.view addSubview:efv];
+    [self.view addSubview:blackView];
     [self.view addSubview:_recordBarView];
 }
 
@@ -360,11 +395,15 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [_locationManager startUpdatingLocation];
             [_locationManager startUpdatingHeading];
             [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
-            [self moveLayer:_previewLayer to:TPRecordFirstViewport];
-            [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
+            _previewLayer.frame = CGRectMake(0.0, 0.0, self.view.bounds.size.width, self.view.bounds.size.height);
+            //[self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
             [CATransaction begin];
             [CATransaction setDisableActions:YES];
             [_recordBarView reset];
+            [_blackEffectView setBackgroundColor:[UIColor clearColor]];
+            [_blackEffectView setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+            [efv setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+            [blackView setHidden:NO];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer removeAllAnimations];
             [_secondRecordingVisualCueLayer setHidden:NO];
@@ -414,7 +453,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
             [_recordBarView start];
-            [self startSecondRecordingVisualCue];
+            //[self startSecondRecordingVisualCue];
+            [self startEffectViewTransition];
             firstRecordingStopTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordFirstInterval
                                                                        target:self
                                                                      selector:@selector(stopFirstRecording)
@@ -460,9 +500,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [_sessionCoordinator setDevicePosition:targetCamera];
             
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-            [self moveLayer:_previewLayer to:TPRecordSecondViewport];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
-            [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
+            [self moveLayer:_previewLayer to:TPRecordSecondViewport];
+            [_blackEffectView setEffect:nil];
+            [efv setEffect:nil];
+            [_blackEffectView setBackgroundColor:[UIColor colorWithWhite:1.0 alpha:TPRecordSecondGraceOpacity]];
             [self startSecondRecording];
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
@@ -488,7 +530,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             assertFrom(TPStateRecordingSecondStarted);
             [_recordBarView pause];
-            [[_previewLayer connection] setEnabled:NO]; // Freeze preview
+            //[[_previewLayer connection] setEnabled:NO]; // Freeze preview
             [_firstPlayer pause];
             [_sessionCoordinator stopRecording];
             
@@ -561,7 +603,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)endSecondRecordingGrace
 {
-    [_secondRecordingVisualCueLayer setHidden:YES];
+    [_blackEffectView setBackgroundColor:[UIColor clearColor]];
     [_firstPlayer play];
     [_recordBarView resume];
 }
@@ -576,6 +618,15 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
     //anime.autoreverses = YES;
     [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
+}
+
+-(void)startEffectViewTransition
+{
+    [blackView setHidden:YES];
+    [UIView animateWithDuration:TPRecordFirstInterval animations:^{
+        efv.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        _blackEffectView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
+    }];
 }
 
 -(void)showSpinner
