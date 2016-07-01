@@ -5,8 +5,6 @@
 
 #import "PreviewViewController.h"
 
-
-static const NSTimeInterval   TPPlaybackInterval      = 5.5;
 static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 
 @interface PreviewViewController ()
@@ -143,7 +141,9 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
     NSLog(@"%lld", firstAsset.duration.value/firstAsset.duration.timescale);
     NSLog(@"%lld", secondAsset.duration.value/secondAsset.duration.timescale);
-    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(TPPlaybackInterval*10, 10));
+    
+    // NOTE: We clip the duration to the 2nd video length as we assume its always the shorter duration
+    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, secondAsset.duration);
     for (NSUInteger i = 0; i < TPPlaybackMaxLoopCount; i++) {
         [firstComposition insertTimeRange:timeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
         [secondComposition insertTimeRange:timeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
