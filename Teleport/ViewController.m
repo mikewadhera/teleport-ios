@@ -59,6 +59,10 @@ static const NSTimeInterval          TPSpinnerInterval                  = 0.3f;
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
 
+// Types
+typedef dispatch_source_t TPDispatchTimer;
+// Types
+
 // For debugging
 #define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
 
@@ -107,9 +111,10 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
     AVCaptureDevicePosition initialDevicePosition;
-    NSTimer *firstRecordingStopTimer;
-    NSTimer *secondRecordingStartGraceTimer;
-    NSTimer *secondRecordingStopTimer;
+    dispatch_queue_t timerQueue;
+    TPDispatchTimer firstRecordingStopTimer;
+    TPDispatchTimer secondRecordingStartGraceTimer;
+    TPDispatchTimer secondRecordingStopTimer;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -118,6 +123,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    timerQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -385,9 +392,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateSessionStopping) {
             
             [UIApplication sharedApplication].idleTimerDisabled = NO;
-            [firstRecordingStopTimer invalidate];
-            [secondRecordingStartGraceTimer invalidate];
-            [secondRecordingStopTimer invalidate];
+            [self stopTimers];
             [_locationManager stopUpdatingLocation];
             [_sessionCoordinator stopRunning];
             
@@ -415,11 +420,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             [_recordBarView start];
             [self startSecondRecordingVisualCue];
-            firstRecordingStopTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordFirstInterval
-                                                                       target:self
-                                                                     selector:@selector(stopFirstRecording)
-                                                                     userInfo:nil
-                                                                      repeats:NO];
+            firstRecordingStopTimer = [self dispatchTimer:TPRecordFirstInterval block:^{
+                @synchronized (self) {
+                    [self transitionToStatus:TPStateRecordingFirstCompleting];
+                }
+            }];
             
         } else if (newStatus == TPStateRecordingFirstCompleting) {
             
@@ -464,7 +469,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
-            [self startSecondRecording];
+            [self transitionToStatus:TPStateRecordingSecondStarting];
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
             
@@ -473,17 +478,16 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
         } else if (newStatus == TPStateRecordingSecondStarted) {
             
-            
-            secondRecordingStartGraceTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordSecondGraceInterval
-                                                                              target:self
-                                                                            selector:@selector(endSecondRecordingGrace)
-                                                                            userInfo:nil
-                                                                             repeats:NO];
-            secondRecordingStopTimer = [NSTimer scheduledTimerWithTimeInterval:TPRecordSecondGraceInterval+TPRecordSecondInterval
-                                                                        target:self
-                                                                      selector:@selector(stopSecondRecording)
-                                                                      userInfo:nil
-                                                                       repeats:NO];
+            secondRecordingStartGraceTimer = [self dispatchTimer:TPRecordSecondGraceInterval block: ^{
+                [_secondRecordingVisualCueLayer setHidden:YES];
+                [_firstPlayer play];
+                [_recordBarView resume];
+            }];
+            secondRecordingStopTimer = [self dispatchTimer:TPRecordSecondGraceInterval+TPRecordSecondInterval block:^{
+                @synchronized (self) {
+                    [self transitionToStatus:TPStateRecordingSecondCompleting];
+                }
+            }];
             
         } else if (newStatus == TPStateRecordingSecondCompleting) {
             
@@ -541,32 +545,33 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     }
 }
 
--(void)stopFirstRecording
+-(TPDispatchTimer)dispatchTimer:(NSTimeInterval)interval block:(dispatch_block_t)block
 {
-    @synchronized (self) {
-        [self transitionToStatus:TPStateRecordingFirstCompleting];
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, timerQueue);
+    if (timer)
+    {
+        dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, interval * NSEC_PER_SEC), DISPATCH_TIME_FOREVER, (1ull * NSEC_PER_SEC) / 10);
+        dispatch_source_set_event_handler(timer, ^{
+            dispatch_source_cancel(timer);
+            dispatch_async( dispatch_get_main_queue(), ^{
+                block();
+            });
+        });
+        dispatch_resume(timer);
     }
+    return timer;
 }
 
--(void)startSecondRecording
+-(void)cancelTimer:(TPDispatchTimer)timer
 {
-    @synchronized (self) {
-        [self transitionToStatus:TPStateRecordingSecondStarting];
-    }
+    if (timer) dispatch_source_cancel(timer);
 }
 
--(void)stopSecondRecording
+-(void)stopTimers
 {
-    @synchronized (self) {
-        [self transitionToStatus:TPStateRecordingSecondCompleting];
-    }
-}
-
--(void)endSecondRecordingGrace
-{
-    [_secondRecordingVisualCueLayer setHidden:YES];
-    [_firstPlayer play];
-    [_recordBarView resume];
+    [self cancelTimer:firstRecordingStopTimer];
+    [self cancelTimer:secondRecordingStartGraceTimer];
+    [self cancelTimer:secondRecordingStopTimer];
 }
 
 -(void)startSecondRecordingVisualCue
