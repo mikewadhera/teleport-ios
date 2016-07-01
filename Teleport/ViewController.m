@@ -78,7 +78,6 @@ typedef dispatch_source_t TPDispatchTimer;
 
 -(void)reset;
 -(void)start;
--(void)pause;
 -(void)resume;
 
 @end
@@ -429,7 +428,6 @@ typedef dispatch_source_t TPDispatchTimer;
         } else if (newStatus == TPStateRecordingFirstCompleting) {
             
             assertFrom(TPStateRecordingFirstStarted);
-            [_recordBarView pause];
             [self showSpinner];
             [_sessionCoordinator stopRecording];
             
@@ -492,7 +490,6 @@ typedef dispatch_source_t TPDispatchTimer;
         } else if (newStatus == TPStateRecordingSecondCompleting) {
             
             assertFrom(TPStateRecordingSecondStarted);
-            [_recordBarView pause];
             [[_previewLayer connection] setEnabled:NO]; // Freeze preview
             [_firstPlayer pause];
             [_sessionCoordinator stopRecording];
@@ -500,7 +497,6 @@ typedef dispatch_source_t TPDispatchTimer;
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
-            [_recordBarView resume];
             AVURLAsset *asset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
             AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
             NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
@@ -830,36 +826,28 @@ typedef dispatch_source_t TPDispatchTimer;
     [progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
 }
 
--(void)start
+-(void)animateStrokeFrom:(CGFloat)fromValue to:(CGFloat)toValue duration:(NSTimeInterval)duration
 {
-    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
-    animation.fromValue = [NSNumber numberWithFloat:1.0f];
-    progressBarLayer.strokeEnd = 0.0;
-    animation.toValue = [NSNumber numberWithFloat:0.0f];
-    animation.duration = TPRecordFirstInterval + TPRecordSecondInterval;
-    progressBarLayer.speed = 1.0;
+    animation.fromValue = [NSNumber numberWithFloat:fromValue];
+    progressBarLayer.strokeEnd = toValue;
+    animation.toValue = [NSNumber numberWithFloat:toValue];
+    animation.duration = duration;
     progressBarLayer.timeOffset = 0.0;
     progressBarLayer.beginTime = 0.0;
     [progressBarLayer addAnimation:animation forKey:@"myStroke"];
 }
 
--(void)pause
+-(void)start
 {
-    CFTimeInterval pausedTime = [progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil];
-    progressBarLayer.speed = 0.0;
-    progressBarLayer.timeOffset = pausedTime;
+    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+    [self animateStrokeFrom:1.0 to:0.5 duration:TPRecordFirstInterval];
 }
 
 -(void)resume
 {
     AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-    CFTimeInterval pausedTime = [progressBarLayer timeOffset];
-    progressBarLayer.speed = 1.0;
-    progressBarLayer.timeOffset = 0.0;
-    progressBarLayer.beginTime = 0.0;
-    CFTimeInterval timeSincePause = [progressBarLayer convertTime:CACurrentMediaTime() fromLayer:nil] - pausedTime;
-    progressBarLayer.beginTime = timeSincePause;
+    [self animateStrokeFrom:0.5 to:0.0 duration:TPRecordSecondInterval];
 }
 
 -(void)didSelectRecord:(id)sender
