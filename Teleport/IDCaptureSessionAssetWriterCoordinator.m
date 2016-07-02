@@ -286,6 +286,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 - (void)teardownVideoPipeline
 {
     self.outputVideoFormatDescription = nil;
+    self.outputAudioFormatDescription = nil;
 }
 
 #pragma mark - SampleBufferDelegate methods
@@ -357,6 +358,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     
     self.assetWriterCoordinator = nil;
+    [self teardownVideoPipeline];
     
     @synchronized( self ) {
         [self transitionToRecordingStatus:RecordingStatusIdle error:nil];
@@ -526,7 +528,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         
         // HACK: need a better way to get this format
         int targetHeight = 1080;
-        if (position == AVCaptureDevicePositionFront) targetHeight = 960;
+        if (position == AVCaptureDevicePositionFront) targetHeight = 720;
         
         // NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
         
