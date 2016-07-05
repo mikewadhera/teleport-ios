@@ -6,6 +6,7 @@
 #import "IDCaptureSessionAssetWriterCoordinator.h"
 #import "PreviewViewController.h"
 #import "TPGeocoder.h"
+#import "RecordTimer.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -43,9 +44,9 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 5.7;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.5;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 #define                              TPProgressBarWidth                 10+floorf((self.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
@@ -58,10 +59,6 @@ static const NSTimeInterval          TPSpinnerInterval                  = 0.3f;
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
-
-// Types
-typedef dispatch_source_t TPDispatchTimer;
-// Types
 
 // For debugging
 #define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
@@ -110,10 +107,8 @@ typedef dispatch_source_t TPDispatchTimer;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
     AVCaptureDevicePosition initialDevicePosition;
-    dispatch_queue_t timerQueue;
-    TPDispatchTimer firstRecordingStopTimer;
-    TPDispatchTimer secondRecordingStartGraceTimer;
-    TPDispatchTimer secondRecordingStopTimer;
+    RecordTimer *firstRecordingStopTimer;
+    RecordTimer *secondRecordingStopTimer;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -122,8 +117,6 @@ typedef dispatch_source_t TPDispatchTimer;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    timerQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -419,7 +412,7 @@ typedef dispatch_source_t TPDispatchTimer;
             
             [_recordBarView start];
             [self startSecondRecordingVisualCue];
-            firstRecordingStopTimer = [self dispatchTimer:TPRecordFirstInterval block:^{
+            firstRecordingStopTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordFirstInterval block:^{
                 @synchronized (self) {
                     [self transitionToStatus:TPStateRecordingFirstCompleting];
                 }
@@ -428,12 +421,12 @@ typedef dispatch_source_t TPDispatchTimer;
         } else if (newStatus == TPStateRecordingFirstCompleting) {
             
             assertFrom(TPStateRecordingFirstStarted);
-            [self showSpinner];
             [_sessionCoordinator stopRecording];
             
         } else if (newStatus == TPStateRecordingFirstCompleted) {
             
             assertFrom(TPStateRecordingFirstCompleting);
+            [self showSpinner];
             [self transitionToStatus:TPStateSessionConfigurationUpdated];
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
@@ -462,12 +455,16 @@ typedef dispatch_source_t TPDispatchTimer;
             // which can take 600ms+ on iPhone6
             [_sessionCoordinator setDevicePosition:targetCamera];
             
-            [_firstPlayer play];
-            [_firstPlayer pause];
             [self moveLayer:_previewLayer to:TPRecordSecondViewport];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
-            [self transitionToStatus:TPStateRecordingSecondStarting];
+            
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordSecondGraceInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                [_secondRecordingVisualCueLayer setHidden:YES];
+                [_firstPlayer play];
+                [_recordBarView resume];
+                [self transitionToStatus:TPStateRecordingSecondStarting];
+            });
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
             
@@ -476,12 +473,7 @@ typedef dispatch_source_t TPDispatchTimer;
             
         } else if (newStatus == TPStateRecordingSecondStarted) {
             
-            secondRecordingStartGraceTimer = [self dispatchTimer:TPRecordSecondGraceInterval block: ^{
-                [_secondRecordingVisualCueLayer setHidden:YES];
-                [_firstPlayer play];
-                [_recordBarView resume];
-            }];
-            secondRecordingStopTimer = [self dispatchTimer:TPRecordSecondGraceInterval+TPRecordSecondInterval block:^{
+            secondRecordingStopTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordSecondInterval block:^{
                 @synchronized (self) {
                     [self transitionToStatus:TPStateRecordingSecondCompleting];
                 }
@@ -497,40 +489,8 @@ typedef dispatch_source_t TPDispatchTimer;
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
-            AVURLAsset *asset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
-            AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:asset presetName:AVAssetExportPresetPassthrough];
-            NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
-            NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
-            exportSession.outputURL = [NSURL fileURLWithPath:outputFilePath];
-            exportSession.outputFileType = AVFileTypeQuickTimeMovie;
-            CMTimeRange range = CMTimeRangeMake(CMTimeMake(TPRecordSecondGraceInterval*10, 10),
-                                                CMTimeMake(TPRecordSecondInterval*10, 10));
-            exportSession.timeRange = range;
-            [exportSession exportAsynchronouslyWithCompletionHandler:^(void){
-                switch (exportSession.status)
-                {
-                    case
-                    AVAssetExportSessionStatusCompleted:
-                    {
-                        [[NSFileManager defaultManager] removeItemAtPath:[_secondVideoURL path] error:nil];
-                        _secondVideoURL = exportSession.outputURL;
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [self transitionToStatus:TPStateRecordingCompleted];
-                        });
-                    }
-                        
-                        break;
-                    case AVAssetExportSessionStatusFailed:
-                        NSLog(@"Trim failed with error ===>>> %@",exportSession.error);
-                        break;
-                    case AVAssetExportSessionStatusCancelled:
-                        NSLog(@"Canceled:%@",exportSession.error);
-                        break;
-                    default:
-                        break;
-                }
-                
-            }];
+            [self transitionToStatus:TPStateRecordingCompleted];
+            
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
@@ -541,33 +501,10 @@ typedef dispatch_source_t TPDispatchTimer;
     }
 }
 
--(TPDispatchTimer)dispatchTimer:(NSTimeInterval)interval block:(dispatch_block_t)block
-{
-    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, timerQueue);
-    if (timer)
-    {
-        dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, interval * NSEC_PER_SEC), DISPATCH_TIME_FOREVER, (1ull * NSEC_PER_SEC) / 10);
-        dispatch_source_set_event_handler(timer, ^{
-            dispatch_source_cancel(timer);
-            dispatch_async( dispatch_get_main_queue(), ^{
-                block();
-            });
-        });
-        dispatch_resume(timer);
-    }
-    return timer;
-}
-
--(void)cancelTimer:(TPDispatchTimer)timer
-{
-    if (timer) dispatch_source_cancel(timer);
-}
-
 -(void)stopTimers
 {
-    [self cancelTimer:firstRecordingStopTimer];
-    [self cancelTimer:secondRecordingStartGraceTimer];
-    [self cancelTimer:secondRecordingStopTimer];
+    [firstRecordingStopTimer invalidate];
+    [secondRecordingStopTimer invalidate];
 }
 
 -(void)startSecondRecordingVisualCue
@@ -840,13 +777,13 @@ typedef dispatch_source_t TPDispatchTimer;
 
 -(void)start
 {
-    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+    //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
     [self animateStrokeFrom:1.0 to:0.5 duration:TPRecordFirstInterval];
 }
 
 -(void)resume
 {
-    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+    //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
     [self animateStrokeFrom:0.5 to:0.0 duration:TPRecordSecondInterval];
 }
 

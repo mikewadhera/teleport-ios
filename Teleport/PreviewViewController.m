@@ -115,6 +115,8 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 
 -(void)viewWillDisappear:(BOOL)animated
 {
+    [super viewWillDisappear:animated];
+    
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
@@ -139,11 +141,12 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     AVMutableComposition *secondComposition = [AVMutableComposition composition];
     AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
-    NSLog(@"%lld", firstAsset.duration.value/firstAsset.duration.timescale);
-    NSLog(@"%lld", secondAsset.duration.value/secondAsset.duration.timescale);
+    NSLog(@"1: %f", CMTimeGetSeconds(firstAsset.duration));
+    NSLog(@"2: %f", CMTimeGetSeconds(secondAsset.duration));
     
-    // NOTE: We clip the duration to the 2nd video length as we assume its always the shorter duration
-    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, secondAsset.duration);
+    // NOTE: We clip the to length of shorter duration
+    AVAsset *shorterAsset = CMTimeGetSeconds(firstAsset.duration) > CMTimeGetSeconds(secondAsset.duration) ? secondAsset : firstAsset;
+    CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, shorterAsset.duration);
     for (NSUInteger i = 0; i < TPPlaybackMaxLoopCount; i++) {
         [firstComposition insertTimeRange:timeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
         [secondComposition insertTimeRange:timeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];

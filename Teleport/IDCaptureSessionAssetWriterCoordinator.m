@@ -263,7 +263,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     
     // Audio
-    if (_devicePosition == AVCaptureDevicePositionFront) {
+    if (NO) {
         self.audioDataOutput = [AVCaptureAudioDataOutput new];
         [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
         if( [captureSession canAddOutput:_audioDataOutput] ){

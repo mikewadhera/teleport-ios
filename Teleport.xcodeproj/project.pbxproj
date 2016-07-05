@@ -15,6 +15,7 @@
 		FB0D9D601D0622DA0024CDC4 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */; };
 		FB0D9D621D0622DA0024CDC4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */; };
 		FB0D9D651D0622DA0024CDC4 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */; };
+		FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = FB15009F1D2C635100DB2251 /* RecordTimer.m */; };
 		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
 		FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AD1D21FAA8001F1F55 /* red@2x.png */; };
 		FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = FB6EDDB61D1B4731008410FD /* TPGeocoder.m */; };
@@ -44,6 +45,8 @@
 		FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FB0D9D641D0622DA0024CDC4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FB0D9D661D0622DA0024CDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FB15009E1D2C635100DB2251 /* RecordTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RecordTimer.h; sourceTree = "<group>"; };
+		FB15009F1D2C635100DB2251 /* RecordTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RecordTimer.m; sourceTree = "<group>"; };
 		FB35E0AC1D21FAA8001F1F55 /* green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "green@2x.png"; sourceTree = "<group>"; };
 		FB35E0AD1D21FAA8001F1F55 /* red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "red@2x.png"; sourceTree = "<group>"; };
 		FB6EDDB51D1B4731008410FD /* TPGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TPGeocoder.h; sourceTree = "<group>"; };
@@ -127,6 +130,8 @@
 				FB0D9D551D0622DA0024CDC4 /* Supporting Files */,
 				FB6EDDB51D1B4731008410FD /* TPGeocoder.h */,
 				FB6EDDB61D1B4731008410FD /* TPGeocoder.m */,
+				FB15009E1D2C635100DB2251 /* RecordTimer.h */,
+				FB15009F1D2C635100DB2251 /* RecordTimer.m */,
 			);
 			path = Teleport;
 			sourceTree = "<group>";
@@ -217,6 +222,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */,
 				FB0D9D5D1D0622DA0024CDC4 /* ViewController.m in Sources */,
 				FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */,
 				FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */,
