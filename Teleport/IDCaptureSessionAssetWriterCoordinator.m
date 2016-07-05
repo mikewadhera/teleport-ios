@@ -148,7 +148,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     _recordingURL = [NSURL fileURLWithPath:outputFilePath];
 
     self.assetWriterCoordinator = [[IDAssetWriterCoordinator alloc] initWithURL:_recordingURL];
-    if(_outputAudioFormatDescription != nil){
+    if (_devicePosition == AVCaptureDevicePositionFront) {
         [_assetWriterCoordinator addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:_audioCompressionSettings];
     }
     [_assetWriterCoordinator addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:_videoCompressionSettings];
@@ -263,7 +263,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     
     // Audio
-    if (NO) {
+    if (_devicePosition == AVCaptureDevicePositionFront) {
         self.audioDataOutput = [AVCaptureAudioDataOutput new];
         [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
         if( [captureSession canAddOutput:_audioDataOutput] ){
