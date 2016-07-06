@@ -44,9 +44,10 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
+static const NSTimeInterval          TPPreviewFadeInInterval            = 1.0;
 static const NSTimeInterval          TPRecordFirstInterval              = 5.5;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = TPPreviewFadeInInterval;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 #define                              TPProgressBarWidth                 10+floorf((self.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
@@ -363,6 +364,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
             [CATransaction begin];
             [CATransaction setDisableActions:YES];
+            _previewLayer.opacity = 0.0;
             [_recordBarView reset];
             [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
             [_secondRecordingVisualCueLayer removeAllAnimations];
@@ -372,12 +374,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
             _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
             _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
-            // These get hidden if we're coming back from preview
-            if (_sessionCoordinator.devicePosition != TPViewportTopCamera) {
-                [_previewLayer setHidden:YES];
-                [_firstPlayerLayer setHidden:YES];
-            }
             [CATransaction commit];
+            [_firstPlayer replaceCurrentItemWithPlayerItem:nil];
+            [[_previewLayer connection] setEnabled:YES];
             
             [_sessionCoordinator startRunning];
             
@@ -397,10 +396,14 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             // Switch camera config back if needed
             if (_sessionCoordinator.devicePosition != initialDevicePosition) {
                 [_sessionCoordinator setDevicePosition:initialDevicePosition];
-                [_previewLayer setHidden:NO];
-                [_firstPlayerLayer setHidden:NO];
             }
+            // Fade-in preview
+            [CATransaction begin];
+            [CATransaction setAnimationDuration:1.0f];
+            _previewLayer.opacity = 1.0;
+            [CATransaction commit];
             [_recordBarView setUserInteractionEnabled:YES];
+            
             [self transitionToStatus:TPStateRecordingIdle];
             
         } else if (newStatus == TPStateRecordingFirstStarting) {
