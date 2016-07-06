@@ -571,9 +571,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 {
     return @{
               AVVideoCodecKey : AVVideoCodecH264,
-              AVVideoWidthKey : @(1280),
-              AVVideoHeightKey : @(960),
-              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
+//              AVVideoWidthKey : @(1280),
+//              AVVideoHeightKey : @(960),
+//              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
               AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(5000000),
                                                        AVVideoExpectedSourceFrameRateKey : @(60),
                                                        AVVideoMaxKeyFrameIntervalKey : @(60),
