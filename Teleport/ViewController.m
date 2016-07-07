@@ -35,7 +35,8 @@ typedef NS_ENUM( NSInteger, TPState ) {
     TPStateRecordingSecondStarted,
     TPStateRecordingSecondCompleting,
     TPStateRecordingSecondCompleted,
-    TPStateRecordingCompleted
+    TPStateRecordingCompleted,
+    TPStateRecordingCanceled
 };
 typedef void (^ AssertFromBlock)(TPState);
 
@@ -49,9 +50,11 @@ static const NSTimeInterval          TPRecordFirstInterval              = 5.5;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = TPPreviewFadeInInterval;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
+static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 10+floorf((self.bounds.size.width*0.10))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
+static const BOOL                    TPProgressBarTrackShouldHide       = YES;
 #define                              TPProgressBarColor                 [UIColor redColor]
 static const CGFloat                 TPSpinnerBarWidth                  = 5.0f;
 #define                              TPSpinnerRadius                    sqrt(hypotf(bounds.size.width, bounds.size.height))*3.0
@@ -62,7 +65,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
 
 // For debugging
-#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted"] objectAtIndex:enum]
+#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted",@"RecordingCanceled"] objectAtIndex:enum]
 
 @protocol RecordProgressBarViewDelegate <NSObject>
 
@@ -77,6 +80,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)reset;
 -(void)start;
 -(void)resume;
+-(void)cancel;
 
 @end
 
@@ -86,7 +90,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
 @property (nonatomic, strong) CLLocationManager *locationManager;
 @property (nonatomic, strong) CLLocation *lastKnownLocation;
-@property (nonatomic) CLLocationDirection lastKnownDirection;
 @property (nonatomic) NSArray *lastKnownPlacemarks;
 @property (nonatomic) TPGeocoder *geocoder;
 
@@ -107,7 +110,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     CGRect topViewportRect;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
-    AVCaptureDevicePosition initialDevicePosition;
     RecordTimer *firstRecordingStopTimer;
     RecordTimer *secondRecordingStopTimer;
 }
@@ -133,20 +135,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [self checkAuth];
     
     // Create the session coordinator
-    switch (TPRecordFirstViewport)
-    {
-        case TPViewportTop:
-        {
-            initialDevicePosition = TPViewportTopCamera;
-            break;
-        }
-        case TPViewportBottom:
-        {
-            initialDevicePosition = TPViewportBottomCamera;
-            break;
-        }
-    }
-    _sessionCoordinator = [[IDCaptureSessionAssetWriterCoordinator alloc] initWithDevicePosition:initialDevicePosition];
+    _sessionCoordinator = [[IDCaptureSessionAssetWriterCoordinator alloc] initWithDevicePosition:[self cameraForViewport:TPRecordFirstViewport]];
     [_sessionCoordinator setDelegate:self callbackQueue:dispatch_get_main_queue()];
     
     // Create the preview
@@ -194,8 +183,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _recordBarView = [[RecordProgressBarView alloc] initWithFrame:self.view.bounds];
     _recordBarView.delegate = self;
     
-    [self.view.layer insertSublayer:_firstPlayerLayer atIndex:0];
-    [self.view.layer insertSublayer:_previewLayer atIndex:1];
+    [self.view.layer insertSublayer:_previewLayer atIndex:0];
+    [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
     [self.view addSubview:_recordBarView];
 }
@@ -222,6 +211,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
     
     if (sessionConfigurationFailed) {
         [self showCameraCaptureErrorDialog];
@@ -250,6 +241,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 - (void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
+    
+    [UIApplication sharedApplication].idleTimerDisabled = NO;
     
     if ( _setupResult == TPCameraSetupResultSuccess ) {
         @synchronized (self) {
@@ -295,36 +288,66 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     }
 }
 
-- (void)moveLayer:(CALayer*)layer to:(TPViewport)viewport
-{
-    CGRect targetFrame;
-    switch (viewport)
-    {
-        case TPViewportTop:
-        {
-            targetFrame = topViewportRect;
-            break;
-        }
-        case TPViewportBottom:
-        {
-            targetFrame = bottomViewportRect;
-            break;
-        }
-    }
-    [CATransaction begin];
-    [CATransaction setDisableActions:YES];
-    [layer setFrame:targetFrame];
-    [CATransaction commit];
-}
-
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     PreviewViewController *vc = [segue destinationViewController];
     vc.firstVideoURL = _firstVideoURL;
     vc.secondVideoURL = _secondVideoURL;
     vc.location = _lastKnownLocation;
-    vc.direction = _lastKnownDirection;
     vc.placemarks = _lastKnownPlacemarks;
+}
+
+-(void)reset
+{
+    // Reset ivars
+    _lastKnownLocation = nil;
+    _lastKnownPlacemarks = nil;
+    _firstVideoURL = nil;
+    _secondVideoURL = nil;
+    
+    // Set initial frames and view states
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    [_firstPlayerLayer setFrame:CGRectZero]; // Off-screen
+    [_previewLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
+    [_secondRecordingVisualCueLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
+    _previewLayer.opacity = 0.0;
+    [_recordBarView reset];
+    [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
+    [_secondRecordingVisualCueLayer removeAllAnimations];
+    [_secondRecordingVisualCueLayer setHidden:NO];
+    [_secondRecordingVisualCueLayer setOpacity:1.0];
+    [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
+    _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
+    _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
+    _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
+    [CATransaction commit];
+    
+    // Clear player and enable preview
+    [_firstPlayer replaceCurrentItemWithPlayerItem:nil];
+    [[_previewLayer connection] setEnabled:YES];
+    
+    // Switch camera if needed
+    if (_sessionCoordinator.devicePosition != [self cameraForViewport:TPRecordFirstViewport]) {
+        [_sessionCoordinator setDevicePosition:[self cameraForViewport:TPRecordFirstViewport]];
+    }
+    
+    // Reset record bar
+    [_recordBarView reset];
+    
+    // Fade-in preview
+    [CATransaction begin];
+    [CATransaction setAnimationDuration:1.0f];
+    _previewLayer.opacity = 1.0;
+    [CATransaction commit];
+}
+
+-(void)cancelRecording
+{
+    [self stopTimers];
+    [_recordBarView cancel];
+    // Note: we handle cleanup in coordinator's didFinishRecordingToOutputFileURL
+    [_sessionCoordinator stopRecording];
 }
 
 // call under @synchonized( self )
@@ -350,41 +373,28 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
-            _lastKnownLocation = nil;
-            _lastKnownDirection = kCLHeadingFilterNone;
-            _lastKnownPlacemarks = nil;
-            _firstVideoURL = nil;
-            _secondVideoURL = nil;
-            [UIApplication sharedApplication].idleTimerDisabled = YES;
-            [_recordBarView setUserInteractionEnabled:NO];
-            [_locationManager startUpdatingLocation];
-            [_locationManager startUpdatingHeading];
-            [self moveLayer:_firstPlayerLayer to:TPRecordFirstViewport];
-            [self moveLayer:_previewLayer to:TPRecordFirstViewport];
-            [self moveLayer:_secondRecordingVisualCueLayer to:TPRecordSecondViewport];
-            [CATransaction begin];
-            [CATransaction setDisableActions:YES];
-            _previewLayer.opacity = 0.0;
-            [_recordBarView reset];
-            [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
-            [_secondRecordingVisualCueLayer removeAllAnimations];
-            [_secondRecordingVisualCueLayer setHidden:NO];
-            [_secondRecordingVisualCueLayer setOpacity:1.0];
-            [_secondRecordingVisualCueLayer setBackgroundColor:[UIColor blackColor].CGColor];
-            _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
-            _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
-            _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
-            [CATransaction commit];
-            [_firstPlayer replaceCurrentItemWithPlayerItem:nil];
-            [[_previewLayer connection] setEnabled:YES];
+            // Set initial state
+            [self reset];
             
+            // Start polling
+            [_locationManager startUpdatingLocation];
+            
+            // Disable recording
+            [_recordBarView setUserInteractionEnabled:NO];
+            
+            // Start session
             [_sessionCoordinator startRunning];
             
         } else if (newStatus == TPStateSessionStopping) {
             
-            [UIApplication sharedApplication].idleTimerDisabled = NO;
-            [self stopTimers];
+            // Cancel recording
+            [self cancelRecording];
+            
+            // Stop polling
             [_locationManager stopUpdatingLocation];
+            [_locationManager stopUpdatingHeading];
+            
+            // Stop session
             [_sessionCoordinator stopRunning];
             
         } else if (newStatus == TPStateSessionConfigurationFailed) {
@@ -393,15 +403,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         
         } else if (newStatus == TPStateSessionStarted) {
             
-            // Switch camera config back if needed
-            if (_sessionCoordinator.devicePosition != initialDevicePosition) {
-                [_sessionCoordinator setDevicePosition:initialDevicePosition];
-            }
-            // Fade-in preview
-            [CATransaction begin];
-            [CATransaction setAnimationDuration:1.0f];
-            _previewLayer.opacity = 1.0;
-            [CATransaction commit];
+            // Enable recording
             [_recordBarView setUserInteractionEnabled:YES];
             
             [self transitionToStatus:TPStateRecordingIdle];
@@ -429,44 +431,44 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingFirstCompleted) {
             
             assertFrom(TPStateRecordingFirstCompleting);
-            [self showSpinner];
             [self transitionToStatus:TPStateSessionConfigurationUpdated];
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
             
+            // Disable layer setFrame animations
+            [CATransaction begin];
+            [CATransaction setDisableActions:YES];
+            
+            // Load and show first recording
             [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem
                                                             playerItemWithAsset:[AVAsset
                                                                                  assetWithURL:_firstVideoURL]]];
             [_firstPlayer seekToTime:kCMTimeZero];
-            AVCaptureDevicePosition targetCamera;
-            switch (TPRecordSecondViewport)
-            {
-                case TPViewportTop:
-                {
-                    targetCamera = TPViewportTopCamera;
-                    break;
-                }
-                case TPViewportBottom:
-                {
-                    targetCamera = TPViewportBottomCamera;
-                    break;
-                }
-            }
+            [_firstPlayerLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
             
-            // -setDevicePosition is long running / blocks this thread
-            // Involves updating the underlying session's configuration
-            // which can take 600ms+ on iPhone6
-            [_sessionCoordinator setDevicePosition:targetCamera];
+            // Switch camera configuration
+            // Note: -setDevicePosition is long running
+            [_sessionCoordinator setDevicePosition:[self cameraForViewport:TPRecordSecondViewport]];
             
-            [self moveLayer:_previewLayer to:TPRecordSecondViewport];
-            [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
+            // Show new camera's preview
+            [_sessionCoordinator.previewLayer.connection setEnabled:YES];
+            [_previewLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
+            
+            [CATransaction commit];
+            
+            // Enter Grace period
+            // New camera preview is barely visible
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
-            
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordSecondGraceInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                // Exit Grace period
+                // Show new camera preview, start first clip,
+                // continue progress bar and transition to recording
                 [_secondRecordingVisualCueLayer setHidden:YES];
                 [_firstPlayer play];
                 [_recordBarView resume];
-                [self transitionToStatus:TPStateRecordingSecondStarting];
+                @synchronized (self) {
+                    [self transitionToStatus:TPStateRecordingSecondStarting];
+                }
             });
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
@@ -485,8 +487,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingSecondCompleting) {
             
             assertFrom(TPStateRecordingSecondStarted);
-            [[_previewLayer connection] setEnabled:NO]; // Freeze preview
-            [_firstPlayer pause];
             [_sessionCoordinator stopRecording];
             
         } else if (newStatus == TPStateRecordingSecondCompleted) {
@@ -497,9 +497,14 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
-            [UIApplication sharedApplication].idleTimerDisabled = NO;
             [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
+        } else if (newStatus == TPStateRecordingCanceled) {
+            
+            [self cancelRecording];
+            [self reset];
+            // Note: we don't transition to idle, rather have stopRecording handle that
+            
         }
     }
 }
@@ -537,12 +542,15 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self transitionToStatus:TPStateRecordingFirstStarting];
         }
     } else {
-        // HACK: We really shouldn't be dependant on temporal ordering of states
         @synchronized (self) {
-            [self transitionToStatus:TPStateSessionStopping];
-            [self transitionToStatus:TPStateSessionStarting];
+            [self transitionToStatus:TPStateRecordingCanceled];
         }
     }
+}
+
+- (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag
+{
+    [_sessionCoordinator.previewLayer.connection setEnabled:!flag]; // Freeze preview
 }
 
 #pragma mark = IDCaptureSessionAssetWriterCoordinatorDelegate methods
@@ -600,6 +608,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)coordinator:(IDCaptureSessionAssetWriterCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
 {
+    // Cleanup and transition to idle if this recording was canceled
+    if (_status == TPStateRecordingCanceled) {
+        [[NSFileManager defaultManager] removeItemAtPath:[outputFileURL path] error:nil];
+        [self transitionToStatus:TPStateRecordingIdle];
+        return;
+    }
+    
     BOOL success = YES;
     if ( error ) {
         NSLog( @"Movie file finishing error: %@", error );
@@ -633,15 +648,45 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     }];
 }
 
-- (void)locationManager:(CLLocationManager *)manager
-       didUpdateHeading:(CLHeading *)newHeading
+#pragma mark Helpers
+
+-(CGRect)frameForViewport:(TPViewport)viewport
 {
-    _lastKnownDirection = [newHeading trueHeading];
-    NSLog(@"NewHeading %f", [newHeading trueHeading]);
-    [_locationManager stopUpdatingHeading];
+    CGRect targetFrame;
+    switch (viewport)
+    {
+        case TPViewportTop:
+        {
+            targetFrame = topViewportRect;
+            break;
+        }
+        case TPViewportBottom:
+        {
+            targetFrame = bottomViewportRect;
+            break;
+        }
+    }
+    return targetFrame;
 }
 
-#pragma mark Helpers
+-(AVCaptureDevicePosition)cameraForViewport:(TPViewport)viewport
+{
+    AVCaptureDevicePosition targetCamera;
+    switch (viewport)
+    {
+        case TPViewportTop:
+        {
+            targetCamera = TPViewportTopCamera;
+            break;
+        }
+        case TPViewportBottom:
+        {
+            targetCamera = TPViewportBottomCamera;
+            break;
+        }
+    }
+    return targetCamera;
+}
 
 -(void)showCameraPermissionErrorDialog
 {
@@ -749,6 +794,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         progressBarLayer.path = path.CGPath;
         progressBarTrackLayer = [CAShapeLayer layer];
         [self.layer insertSublayer:progressBarTrackLayer atIndex:0];
+        [progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
         [progressBarTrackLayer setLineWidth:TPProgressBarWidth];
         [progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
         progressBarTrackLayer.path = progressBarLayer.path;
@@ -763,12 +809,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 {
     [progressBarTrackLayer setHidden:NO];
     [progressBarLayer setHidden:YES];
-    [progressBarTrackLayer setStrokeColor:TPProgressBarTrackColor.CGColor];
+    [progressBarLayer setStrokeEnd:1.0];
 }
 
 -(void)animateStrokeFrom:(CGFloat)fromValue to:(CGFloat)toValue duration:(NSTimeInterval)duration
 {
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    animation.delegate = self.delegate;
     animation.fromValue = [NSNumber numberWithFloat:fromValue];
     progressBarLayer.strokeEnd = toValue;
     animation.toValue = [NSNumber numberWithFloat:toValue];
@@ -780,19 +827,22 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)start
 {
-    //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-    [self animateStrokeFrom:1.0 to:0.5 duration:TPRecordFirstInterval];
+    [self animateStrokeFrom:1.0 to:0.5 duration:TPRecordFirstInterval-TPProgressBarEarlyEndInterval];
 }
 
 -(void)resume
 {
-    //AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-    [self animateStrokeFrom:0.5 to:0.0 duration:TPRecordSecondInterval];
+    [self animateStrokeFrom:0.5 to:0.0 duration:TPRecordSecondInterval-TPProgressBarEarlyEndInterval];
+}
+
+-(void)cancel
+{
+    [progressBarLayer removeAllAnimations];
 }
 
 -(void)didSelectRecord:(id)sender
 {
-    [progressBarTrackLayer setHidden:YES];
+    [progressBarTrackLayer setHidden:TPProgressBarTrackShouldHide];
     [progressBarLayer setHidden:NO];
     [self.delegate recordProgressBarViewTap];
 }
