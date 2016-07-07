@@ -251,7 +251,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     _videoConnection = [_videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
     if ( [_videoConnection isVideoStabilizationSupported] ) {
-        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeCinematic];
+        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeStandard];
     }
     if (_devicePosition == AVCaptureDevicePositionFront) {
         if ( [_videoConnection isVideoOrientationSupported] ) {
@@ -548,7 +548,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
                 //}
                 [videoDevice unlockForConfiguration];
                 
-                NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
+                //NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
             } else {
                 NSLog( @"Could not lock device for configuration");
             }

@@ -325,7 +325,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     // Clear player and enable preview
     [_firstPlayer replaceCurrentItemWithPlayerItem:nil];
-    [[_previewLayer connection] setEnabled:YES];
+    [_sessionCoordinator.previewLayer.connection setEnabled:YES];
     
     // Switch camera if needed
     if (_sessionCoordinator.devicePosition != [self cameraForViewport:TPRecordFirstViewport]) {
@@ -346,7 +346,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 {
     [self stopTimers];
     [_recordBarView cancel];
-    // Note: we handle cleanup in coordinator's didFinishRecordingToOutputFileURL
+    [_firstPlayer pause];
+    [_sessionCoordinator.previewLayer.connection setEnabled:NO];
+    // Note: we transition when called back in coordinator's didFinishRecordingToOutputFileURL
     [_sessionCoordinator stopRecording];
 }
 
@@ -502,8 +504,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingCanceled) {
             
             [self cancelRecording];
-            [self reset];
-            // Note: we don't transition to idle, rather have stopRecording handle that
             
         }
     }
@@ -550,7 +550,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag
 {
-    [_sessionCoordinator.previewLayer.connection setEnabled:!flag]; // Freeze preview
+    if (flag) [_sessionCoordinator.previewLayer.connection setEnabled:NO]; // Freeze preview
 }
 
 #pragma mark = IDCaptureSessionAssetWriterCoordinatorDelegate methods
@@ -611,6 +611,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     // Cleanup and transition to idle if this recording was canceled
     if (_status == TPStateRecordingCanceled) {
         [[NSFileManager defaultManager] removeItemAtPath:[outputFileURL path] error:nil];
+        [self reset];
         [self transitionToStatus:TPStateRecordingIdle];
         return;
     }
@@ -807,9 +808,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)reset
 {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
     [progressBarTrackLayer setHidden:NO];
     [progressBarLayer setHidden:YES];
     [progressBarLayer setStrokeEnd:1.0];
+    [CATransaction commit];
 }
 
 -(void)animateStrokeFrom:(CGFloat)fromValue to:(CGFloat)toValue duration:(NSTimeInterval)duration
@@ -820,9 +824,10 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     progressBarLayer.strokeEnd = toValue;
     animation.toValue = [NSNumber numberWithFloat:toValue];
     animation.duration = duration;
+    progressBarLayer.speed = 1.0;
     progressBarLayer.timeOffset = 0.0;
     progressBarLayer.beginTime = 0.0;
-    [progressBarLayer addAnimation:animation forKey:@"myStroke"];
+    [progressBarLayer addAnimation:animation forKey:nil];
 }
 
 -(void)start
@@ -837,7 +842,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)cancel
 {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    [progressBarLayer setHidden:YES];
+    [CATransaction commit];
+    progressBarLayer.speed = 0.0;
     [progressBarLayer removeAllAnimations];
+    [self reset];
 }
 
 -(void)didSelectRecord:(id)sender
