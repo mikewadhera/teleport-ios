@@ -36,6 +36,7 @@ typedef NS_ENUM( NSInteger, TPState ) {
     TPStateRecordingSecondCompleting,
     TPStateRecordingSecondCompleted,
     TPStateRecordingCompleted,
+    TPStateRecordingCanceling,
     TPStateRecordingCanceled
 };
 typedef void (^ AssertFromBlock)(TPState);
@@ -65,7 +66,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 // Constants
 
 // For debugging
-#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted",@"RecordingCanceled"] objectAtIndex:enum]
+#define stateFor(enum) [@[@"SessionStopped",@"SessionStopping",@"SessionStarting",@"SessionStarted",@"SessionConfigurationFailed",@"RecordingIdle",@"RecordingStarted",@"RecordingFirstStarting",@"RecordingFirstStarted",@"RecordingFirstCompleting",@"RecordingFirstCompleted",@"SessionConfigurationUpdated",@"RecordingSecondStarting",@"RecordingSecondStarted",@"RecordingSecondCompleting",@"RecordingSecondCompleted",@"RecordingCompleted",@"RecordingCanceling",@"RecordingCanceled"] objectAtIndex:enum]
 
 @protocol RecordProgressBarViewDelegate <NSObject>
 
@@ -311,7 +312,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_firstPlayerLayer setFrame:CGRectZero]; // Off-screen
     [_previewLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
     [_secondRecordingVisualCueLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
-    _previewLayer.opacity = 0.0;
     [_recordBarView reset];
     [_secondRecordingVisualCueSpinnerLayer setHidden:YES];
     [_secondRecordingVisualCueLayer removeAllAnimations];
@@ -336,6 +336,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_recordBarView reset];
     
     // Fade-in preview
+    _previewLayer.opacity = 0.0;
     [CATransaction begin];
     [CATransaction setAnimationDuration:1.0f];
     _previewLayer.opacity = 1.0;
@@ -348,7 +349,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_recordBarView cancel];
     [_firstPlayer pause];
     [_sessionCoordinator.previewLayer.connection setEnabled:NO];
-    // Note: we transition when called back in coordinator's didFinishRecordingToOutputFileURL
     [_sessionCoordinator stopRecording];
 }
 
@@ -501,10 +501,16 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             assertFrom(TPStateRecordingSecondCompleted);
             [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
+        } else if (newStatus == TPStateRecordingCanceling) {
+            
+            // Note: we transition in coordinator's didFinishRecordingToOutputFileURL
+            [self cancelRecording];
+        
         } else if (newStatus == TPStateRecordingCanceled) {
             
-            [self cancelRecording];
-            
+            assertFrom(TPStateRecordingCanceling);
+            [self reset];
+            [self transitionToStatus:TPStateRecordingIdle];
         }
     }
 }
@@ -543,7 +549,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         }
     } else {
         @synchronized (self) {
-            [self transitionToStatus:TPStateRecordingCanceled];
+            [self transitionToStatus:TPStateRecordingCanceling];
         }
     }
 }
@@ -608,11 +614,10 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)coordinator:(IDCaptureSessionAssetWriterCoordinator *)coordinator didFinishRecordingToOutputFileURL:(NSURL *)outputFileURL error:(NSError *)error
 {
-    // Cleanup and transition to idle if this recording was canceled
-    if (_status == TPStateRecordingCanceled) {
+    // Cleanup and transition to canceled if canceling
+    if (_status == TPStateRecordingCanceling) {
         [[NSFileManager defaultManager] removeItemAtPath:[outputFileURL path] error:nil];
-        [self reset];
-        [self transitionToStatus:TPStateRecordingIdle];
+        [self transitionToStatus:TPStateRecordingCanceled];
         return;
     }
     
