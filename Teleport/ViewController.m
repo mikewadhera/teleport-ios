@@ -302,6 +302,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)reset
 {
     // Reset ivars
+    recordingOutputURL = nil;
     _lastKnownLocation = nil;
     _lastKnownPlacemarks = nil;
     _firstVideoURL = nil;
@@ -328,16 +329,15 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_firstPlayer replaceCurrentItemWithPlayerItem:nil];
     [_sessionCoordinator.previewLayer.connection setEnabled:YES];
     
-    // Switch camera if needed
-    if (_sessionCoordinator.devicePosition != [self cameraForViewport:TPRecordFirstViewport]) {
-        [_sessionCoordinator setDevicePosition:[self cameraForViewport:TPRecordFirstViewport]];
-    }
-    
     // Reset record bar
     [_recordBarView reset];
     
     // Fade-in preview
     _previewLayer.opacity = 0.0;
+    // Switch camera if needed
+    if (_sessionCoordinator.devicePosition != [self cameraForViewport:TPRecordFirstViewport]) {
+        [_sessionCoordinator setDevicePosition:[self cameraForViewport:TPRecordFirstViewport]];
+    }
     [CATransaction begin];
     [CATransaction setAnimationDuration:1.0f];
     _previewLayer.opacity = 1.0;
@@ -395,7 +395,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             // Stop polling
             [_locationManager stopUpdatingLocation];
-            [_locationManager stopUpdatingHeading];
             
             // Stop session
             [_sessionCoordinator stopRunning];
@@ -853,10 +852,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)cancel
 {
-    [CATransaction begin];
-    [CATransaction setDisableActions:YES];
-    [progressBarLayer setHidden:YES];
-    [CATransaction commit];
     progressBarLayer.speed = 0.0;
     [progressBarLayer removeAllAnimations];
     [self reset];
