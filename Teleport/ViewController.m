@@ -460,7 +460,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [CATransaction commit];
             
             // Enter Grace period
-            // New camera preview is barely visible
+            // Vibrate alert, set camera preview barely visible
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordSecondGraceInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
                 // Exit Grace period
