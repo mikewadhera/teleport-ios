@@ -112,6 +112,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
     RecordTimer *firstRecordingStopTimer;
+    RecordTimer *secondRecordingStartTimer;
     RecordTimer *secondRecordingStopTimer;
     NSURL *recordingOutputURL;
 }
@@ -463,7 +464,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             // Vibrate alert, set camera preview barely visible
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, TPRecordSecondGraceInterval * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            secondRecordingStartTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordSecondGraceInterval block: ^{
                 // Exit Grace period
                 // Show new camera preview, start first clip,
                 // continue progress bar and transition to recording
@@ -473,7 +474,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                 @synchronized (self) {
                     [self transitionToStatus:TPStateRecordingSecondStarting];
                 }
-            });
+            }];
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
             
@@ -528,6 +529,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)stopTimers
 {
     [firstRecordingStopTimer invalidate];
+    [secondRecordingStartTimer invalidate];
     [secondRecordingStopTimer invalidate];
 }
 
