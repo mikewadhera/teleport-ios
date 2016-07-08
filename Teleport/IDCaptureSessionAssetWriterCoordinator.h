@@ -26,7 +26,7 @@
 - (void)stopRunning;
 
 - (void)startRecording;
-- (void)stopRecording;
+- (BOOL)stopRecording;
 
 - (AVCaptureVideoPreviewLayer *)previewLayer;
 

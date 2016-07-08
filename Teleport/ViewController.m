@@ -114,7 +114,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     RecordTimer *firstRecordingStopTimer;
     RecordTimer *secondRecordingStartTimer;
     RecordTimer *secondRecordingStopTimer;
-    NSURL *recordingOutputURL;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -302,13 +301,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)reset
 {
-    // Reset ivars
-    recordingOutputURL = nil;
-    _lastKnownLocation = nil;
-    _lastKnownPlacemarks = nil;
-    _firstVideoURL = nil;
-    _secondVideoURL = nil;
-    
     // Set initial frames and view states
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
@@ -345,13 +337,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [CATransaction commit];
 }
 
--(void)cancelRecording
+-(BOOL)cancelRecording
 {
     [self stopTimers];
     [_recordBarView cancel];
     [_firstPlayer pause];
     [_sessionCoordinator.previewLayer.connection setEnabled:NO];
-    [_sessionCoordinator stopRecording];
+    return [_sessionCoordinator stopRecording];
 }
 
 // call under @synchonized( self )
@@ -377,7 +369,14 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
-            // Set initial state
+            // Initialize session-owned state
+            // Note: We never clear these on stop so we can reference in cleanup code
+            _lastKnownLocation = nil;
+            _lastKnownPlacemarks = nil;
+            _firstVideoURL = nil;
+            _secondVideoURL = nil;
+            
+            // Set initial views
             [self reset];
             
             // Start polling
@@ -434,7 +433,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingFirstCompleted) {
             
             assertFrom(TPStateRecordingFirstCompleting);
-            _firstVideoURL = recordingOutputURL;
             [self transitionToStatus:TPStateSessionConfigurationUpdated];
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
@@ -497,7 +495,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingSecondCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleting);
-            _secondVideoURL = recordingOutputURL;
             [self transitionToStatus:TPStateRecordingCompleted];
             
         } else if (newStatus == TPStateRecordingCompleted) {
@@ -507,21 +504,24 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
         } else if (newStatus == TPStateRecordingCanceling) {
             
-            // Note: we transition in coordinator's didFinishRecordingToOutputFileURL
-            [self cancelRecording];
+            BOOL anyRecorded = [self cancelRecording];
+            [self reset];
+            // Cleanup first canceled recording (if any)
+            // We wait to do this after -reset as player shows file
+            if (_firstVideoURL) [[NSFileManager defaultManager] removeItemAtPath:[_firstVideoURL path] error:nil];
+            
+            // Check if -cancelRecording returned NO, if so we are responsible for transitioning to Canceled
+            // In the normal case we are transitioned to Canceled by coordinator's didFinishRecordingToOutputFileURL
+            // which gets call backed after the canceled in-flight recording finishes
+            if (!anyRecorded) {
+                [self transitionToStatus:TPStateRecordingCanceled];
+            }
         
         } else if (newStatus == TPStateRecordingCanceled) {
             
             assertFrom(TPStateRecordingCanceling);
-            
-            // Reset
-            [self reset];
-            
-            // Cleanup both files
-            if (recordingOutputURL) [[NSFileManager defaultManager] removeItemAtPath:[recordingOutputURL path] error:nil];
-            if (_firstVideoURL) [[NSFileManager defaultManager] removeItemAtPath:[_firstVideoURL path] error:nil];
-            
             [self transitionToStatus:TPStateRecordingIdle];
+            
         }
     }
 }
@@ -621,6 +621,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         @synchronized (self) {
             [self transitionToStatus:TPStateRecordingSecondStarted];
         }
+    } else {
+        // Assume rogue recording - cancel
+        @synchronized (self) {
+            [self transitionToStatus:TPStateRecordingCanceling];
+        }
     }
 }
 
@@ -632,16 +637,19 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         success = [error.userInfo[AVErrorRecordingSuccessfullyFinishedKey] boolValue];
     }
     if ( success ) {
-        recordingOutputURL = outputFileURL;
         if (_status == TPStateRecordingFirstCompleting) {
+            _firstVideoURL = outputFileURL;
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingFirstCompleted];
             }
         } else if (_status == TPStateRecordingSecondCompleting) {
+            _secondVideoURL = outputFileURL;
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingSecondCompleted];
             }
         } else if (_status == TPStateRecordingCanceling) {
+            // Cleanup current canceled recording
+            [[NSFileManager defaultManager] removeItemAtPath:[outputFileURL path] error:nil];
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingCanceled];
             }
