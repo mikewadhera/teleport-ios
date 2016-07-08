@@ -7,6 +7,7 @@
 #import "PreviewViewController.h"
 #import "TPGeocoder.h"
 #import "RecordTimer.h"
+#import "JPSVolumeButtonHandler.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -114,6 +115,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     RecordTimer *firstRecordingStopTimer;
     RecordTimer *secondRecordingStartTimer;
     RecordTimer *secondRecordingStopTimer;
+    JPSVolumeButtonHandler *volumeHandler;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -184,6 +186,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     // Record Bar
     _recordBarView = [[RecordProgressBarView alloc] initWithFrame:self.view.bounds];
     _recordBarView.delegate = self;
+    
+    // Volume Handler
+    volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
+        [self toggleRecording];
+    } downBlock:^{
+        [self toggleRecording];
+    }];
     
     [self.view.layer insertSublayer:_previewLayer atIndex:0];
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
@@ -344,6 +353,19 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_firstPlayer pause];
     [_sessionCoordinator.previewLayer.connection setEnabled:NO];
     return [_sessionCoordinator stopRecording];
+}
+
+-(void)toggleRecording
+{
+    if (_status == TPStateRecordingIdle) {
+        @synchronized (self) {
+            [self transitionToStatus:TPStateRecordingFirstStarting];
+        }
+    } else {
+        @synchronized (self) {
+            [self transitionToStatus:TPStateRecordingCanceling];
+        }
+    }
 }
 
 // call under @synchonized( self )
@@ -545,25 +567,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
 }
 
--(void)showSpinner
-{
-    [_secondRecordingVisualCueSpinnerLayer setHidden:NO];
-    [[self class] addSpinnerAnimations:_secondRecordingVisualCueSpinnerLayer];
-}
-
 #pragma mark = RecordProgressBarViewDelegate methods
 
 - (void)recordProgressBarViewTap
 {
-    if (_status == TPStateRecordingIdle) {
-        @synchronized (self) {
-            [self transitionToStatus:TPStateRecordingFirstStarting];
-        }
-    } else {
-        @synchronized (self) {
-            [self transitionToStatus:TPStateRecordingCanceling];
-        }
-    }
+    [self toggleRecording];
 }
 
 - (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag
@@ -853,6 +861,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)start
 {
+    [progressBarTrackLayer setHidden:TPProgressBarTrackShouldHide];
+    [progressBarLayer setHidden:NO];
     [self animateStrokeFrom:1.0 to:0.5 duration:TPRecordFirstInterval-TPProgressBarEarlyEndInterval];
 }
 
@@ -870,8 +880,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)didSelectRecord:(id)sender
 {
-    [progressBarTrackLayer setHidden:TPProgressBarTrackShouldHide];
-    [progressBarLayer setHidden:NO];
     [self.delegate recordProgressBarViewTap];
 }
 

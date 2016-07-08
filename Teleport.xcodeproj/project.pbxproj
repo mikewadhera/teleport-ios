@@ -18,6 +18,7 @@
 		FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = FB15009F1D2C635100DB2251 /* RecordTimer.m */; };
 		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
 		FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AD1D21FAA8001F1F55 /* red@2x.png */; };
+		FB4BAA7B1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = FB4BAA7A1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m */; };
 		FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = FB6EDDB61D1B4731008410FD /* TPGeocoder.m */; };
 		FB6EDDB91D1B6221008410FD /* send@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDB81D1B6221008410FD /* send@2x.png */; };
 		FB6EDDC31D1B70E5008410FD /* check@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDC21D1B70E5008410FD /* check@2x.png */; };
@@ -49,6 +50,8 @@
 		FB15009F1D2C635100DB2251 /* RecordTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RecordTimer.m; sourceTree = "<group>"; };
 		FB35E0AC1D21FAA8001F1F55 /* green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "green@2x.png"; sourceTree = "<group>"; };
 		FB35E0AD1D21FAA8001F1F55 /* red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "red@2x.png"; sourceTree = "<group>"; };
+		FB4BAA791D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JPSVolumeButtonHandler.h; sourceTree = "<group>"; };
+		FB4BAA7A1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JPSVolumeButtonHandler.m; sourceTree = "<group>"; };
 		FB6EDDB51D1B4731008410FD /* TPGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TPGeocoder.h; sourceTree = "<group>"; };
 		FB6EDDB61D1B4731008410FD /* TPGeocoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TPGeocoder.m; sourceTree = "<group>"; };
 		FB6EDDB81D1B6221008410FD /* send@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "send@2x.png"; sourceTree = "<group>"; };
@@ -108,6 +111,7 @@
 		FB0D9D541D0622DA0024CDC4 /* Teleport */ = {
 			isa = PBXGroup;
 			children = (
+				FB4BAA781D2F6DCD0063E2A7 /* JPSVolumeButtonHandler */,
 				FB35E0AC1D21FAA8001F1F55 /* green@2x.png */,
 				FB35E0AD1D21FAA8001F1F55 /* red@2x.png */,
 				FB6EDDCA1D1B9061008410FD /* x@2x.png */,
@@ -142,6 +146,15 @@
 				FB0D9D561D0622DA0024CDC4 /* main.m */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		FB4BAA781D2F6DCD0063E2A7 /* JPSVolumeButtonHandler */ = {
+			isa = PBXGroup;
+			children = (
+				FB4BAA791D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.h */,
+				FB4BAA7A1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m */,
+			);
+			path = JPSVolumeButtonHandler;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -225,6 +238,7 @@
 				FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */,
 				FB0D9D5D1D0622DA0024CDC4 /* ViewController.m in Sources */,
 				FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */,
+				FB4BAA7B1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m in Sources */,
 				FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */,
 				FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */,
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
