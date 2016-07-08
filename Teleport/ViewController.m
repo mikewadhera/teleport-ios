@@ -187,13 +187,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _recordBarView = [[RecordProgressBarView alloc] initWithFrame:self.view.bounds];
     _recordBarView.delegate = self;
     
-    // Volume Handler
-    volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
-        [self toggleRecording];
-    } downBlock:^{
-        [self toggleRecording];
-    }];
-    
     [self.view.layer insertSublayer:_previewLayer atIndex:0];
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
@@ -233,6 +226,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     {
         case TPCameraSetupResultSuccess:
         {
+            // Volume Handler
+            volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
+                [self toggleRecording];
+            } downBlock:^{
+                [self toggleRecording];
+            }];
             @synchronized (self) {
                 [self transitionToStatus:TPStateSessionStarting];
             }
@@ -257,6 +256,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     if ( _setupResult == TPCameraSetupResultSuccess ) {
         @synchronized (self) {
+            volumeHandler = nil;
             [self transitionToStatus:TPStateSessionStopping];
         }
     }
