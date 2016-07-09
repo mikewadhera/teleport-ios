@@ -8,6 +8,7 @@
 #import "TPGeocoder.h"
 #import "RecordTimer.h"
 #import "JPSVolumeButtonHandler.h"
+#import "TPUploadSession.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -104,6 +105,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic, copy) NSURL *secondVideoURL;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
+@property (nonatomic, strong) TPUploadSession *uploadSession;
 
 @end
 

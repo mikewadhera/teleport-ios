@@ -26,10 +26,39 @@
 		FB6EDDC91D1B8F09008410FD /* close@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDC81D1B8F09008410FD /* close@2x.png */; };
 		FB6EDDCB1D1B9061008410FD /* x@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDCA1D1B9061008410FD /* x@2x.png */; };
 		FB8705681D07C50C00336D82 /* record@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB8705671D07C50C00336D82 /* record@2x.png */; };
+		FBEF04581D305FC5007FFB48 /* TPUploadSession.m in Sources */ = {isa = PBXBuildFile; fileRef = FBEF04571D305FC5007FFB48 /* TPUploadSession.m */; };
+		FBEF045E1D306A63007FFB48 /* AWSCognito.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF04591D306A63007FFB48 /* AWSCognito.framework */; };
+		FBEF045F1D306A63007FFB48 /* AWSCognito.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF04591D306A63007FFB48 /* AWSCognito.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FBEF04601D306A63007FFB48 /* AWSCognitoIdentityProvider.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045A1D306A63007FFB48 /* AWSCognitoIdentityProvider.framework */; };
+		FBEF04611D306A63007FFB48 /* AWSCognitoIdentityProvider.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045A1D306A63007FFB48 /* AWSCognitoIdentityProvider.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FBEF04621D306A63007FFB48 /* AWSCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045B1D306A63007FFB48 /* AWSCore.framework */; };
+		FBEF04631D306A63007FFB48 /* AWSCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045B1D306A63007FFB48 /* AWSCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FBEF04641D306A63007FFB48 /* AWSS3.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045C1D306A63007FFB48 /* AWSS3.framework */; };
+		FBEF04651D306A63007FFB48 /* AWSS3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045C1D306A63007FFB48 /* AWSS3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FBEF04661D306A63007FFB48 /* AWSMobileAnalytics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045D1D306A63007FFB48 /* AWSMobileAnalytics.framework */; };
+		FBEF04671D306A63007FFB48 /* AWSMobileAnalytics.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FBEF045D1D306A63007FFB48 /* AWSMobileAnalytics.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FBF38E0C1D1092A100F7D881 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBF38E0A1D1092A100F7D881 /* AudioToolbox.framework */; };
 		FBF38E0D1D1092A100F7D881 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBF38E0B1D1092A100F7D881 /* AVFoundation.framework */; };
 		FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FBF38E0F1D10D00300F7D881 /* PreviewViewController.m */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FBEF04681D306A63007FFB48 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				FBEF04651D306A63007FFB48 /* AWSS3.framework in Embed Frameworks */,
+				FBEF045F1D306A63007FFB48 /* AWSCognito.framework in Embed Frameworks */,
+				FBEF04611D306A63007FFB48 /* AWSCognitoIdentityProvider.framework in Embed Frameworks */,
+				FBEF04631D306A63007FFB48 /* AWSCore.framework in Embed Frameworks */,
+				FBEF04671D306A63007FFB48 /* AWSMobileAnalytics.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		FB0CB4171D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDCaptureSessionAssetWriterCoordinator.h; sourceTree = "<group>"; };
@@ -60,6 +89,13 @@
 		FB6EDDC81D1B8F09008410FD /* close@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "close@2x.png"; sourceTree = "<group>"; };
 		FB6EDDCA1D1B9061008410FD /* x@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "x@2x.png"; sourceTree = "<group>"; };
 		FB8705671D07C50C00336D82 /* record@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "record@2x.png"; sourceTree = "<group>"; };
+		FBEF04561D305FC5007FFB48 /* TPUploadSession.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TPUploadSession.h; sourceTree = "<group>"; };
+		FBEF04571D305FC5007FFB48 /* TPUploadSession.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TPUploadSession.m; sourceTree = "<group>"; };
+		FBEF04591D306A63007FFB48 /* AWSCognito.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AWSCognito.framework; sourceTree = "<group>"; };
+		FBEF045A1D306A63007FFB48 /* AWSCognitoIdentityProvider.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AWSCognitoIdentityProvider.framework; sourceTree = "<group>"; };
+		FBEF045B1D306A63007FFB48 /* AWSCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AWSCore.framework; sourceTree = "<group>"; };
+		FBEF045C1D306A63007FFB48 /* AWSS3.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AWSS3.framework; sourceTree = "<group>"; };
+		FBEF045D1D306A63007FFB48 /* AWSMobileAnalytics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AWSMobileAnalytics.framework; sourceTree = "<group>"; };
 		FBF38E0A1D1092A100F7D881 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		FBF38E0B1D1092A100F7D881 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		FBF38E0E1D10D00300F7D881 /* PreviewViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PreviewViewController.h; sourceTree = "<group>"; };
@@ -71,8 +107,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FBEF04661D306A63007FFB48 /* AWSMobileAnalytics.framework in Frameworks */,
+				FBEF045E1D306A63007FFB48 /* AWSCognito.framework in Frameworks */,
+				FBEF04621D306A63007FFB48 /* AWSCore.framework in Frameworks */,
+				FBEF04641D306A63007FFB48 /* AWSS3.framework in Frameworks */,
 				FBF38E0C1D1092A100F7D881 /* AudioToolbox.framework in Frameworks */,
 				FBF38E0D1D1092A100F7D881 /* AVFoundation.framework in Frameworks */,
+				FBEF04601D306A63007FFB48 /* AWSCognitoIdentityProvider.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +134,11 @@
 		FB0D9D491D0622D90024CDC4 = {
 			isa = PBXGroup;
 			children = (
+				FBEF04591D306A63007FFB48 /* AWSCognito.framework */,
+				FBEF045A1D306A63007FFB48 /* AWSCognitoIdentityProvider.framework */,
+				FBEF045B1D306A63007FFB48 /* AWSCore.framework */,
+				FBEF045C1D306A63007FFB48 /* AWSS3.framework */,
+				FBEF045D1D306A63007FFB48 /* AWSMobileAnalytics.framework */,
 				FBF38E0A1D1092A100F7D881 /* AudioToolbox.framework */,
 				FBF38E0B1D1092A100F7D881 /* AVFoundation.framework */,
 				FB0D9D541D0622DA0024CDC4 /* Teleport */,
@@ -136,6 +182,8 @@
 				FB6EDDB61D1B4731008410FD /* TPGeocoder.m */,
 				FB15009E1D2C635100DB2251 /* RecordTimer.h */,
 				FB15009F1D2C635100DB2251 /* RecordTimer.m */,
+				FBEF04561D305FC5007FFB48 /* TPUploadSession.h */,
+				FBEF04571D305FC5007FFB48 /* TPUploadSession.m */,
 			);
 			path = Teleport;
 			sourceTree = "<group>";
@@ -167,6 +215,8 @@
 				FB0D9D4E1D0622D90024CDC4 /* Sources */,
 				FB0D9D4F1D0622D90024CDC4 /* Frameworks */,
 				FB0D9D501D0622D90024CDC4 /* Resources */,
+				FBEF04681D306A63007FFB48 /* Embed Frameworks */,
+				FBEF04691D306A7E007FFB48 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -230,6 +280,22 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		FBEF04691D306A7E007FFB48 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "bash \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/AWSCore.framework/strip-frameworks.sh\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		FB0D9D4E1D0622D90024CDC4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -244,6 +310,7 @@
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
 				FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */,
 				FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */,
+				FBEF04581D305FC5007FFB48 /* TPUploadSession.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -355,6 +422,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				INFOPLIST_FILE = Teleport/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.teleport.Teleport;
@@ -366,6 +437,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				INFOPLIST_FILE = Teleport/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.teleport.Teleport;
