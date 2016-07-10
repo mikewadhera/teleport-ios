@@ -99,7 +99,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 - (void)startRunning
 {
-    dispatch_sync( _sessionQueue, ^{
+    dispatch_async( _sessionQueue, ^{
         [self addObservers];
         [_captureSession startRunning];
         _sessionRunning = [_captureSession isRunning];
@@ -108,7 +108,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 - (void)stopRunning
 {
-    dispatch_sync( _sessionQueue, ^{
+    dispatch_async( _sessionQueue, ^{
         // the captureSessionDidStopRunning method will stop recording if necessary as well, but we do it here so that the last video and audio samples are better aligned
         [self stopRecording]; // does nothing if we aren't currently recording
         [_captureSession stopRunning];
@@ -148,7 +148,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     _recordingURL = [NSURL fileURLWithPath:outputFilePath];
 
     self.assetWriterCoordinator = [[IDAssetWriterCoordinator alloc] initWithURL:_recordingURL];
-    if (_devicePosition == AVCaptureDevicePositionFront) {
+    if (self.outputAudioFormatDescription != nil) {
         [_assetWriterCoordinator addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:_audioCompressionSettings];
     }
     [_assetWriterCoordinator addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:_videoCompressionSettings];
@@ -190,12 +190,10 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     
     // Inputs
     if (self.cameraDeviceInput) [self.captureSession removeInput:self.cameraDeviceInput];
-    if (self.audioDeviceInput) [self.captureSession removeInput:self.audioDeviceInput];
     [self addInputsToCaptureSession:self.captureSession];
     
     // Outputs
     if (self.videoDataOutput) [self.captureSession removeOutput:self.videoDataOutput];
-    if (self.audioDataOutput) [self.captureSession removeOutput:self.audioDataOutput];
     [self addDataOutputsToCaptureSession:self.captureSession];
     
     [self.captureSession commitConfiguration];
@@ -215,24 +213,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         NSLog(@"failed to set device position: %ld", (long)self.devicePosition);
     }
     [[self class] configureCamera:videoDevice atPosition:self.devicePosition];
-    
-    // Audio
-    if (_devicePosition == AVCaptureDevicePositionFront) {
-        NSError *error;
-        AVCaptureDevice *audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
-        AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
-        if ( ! audioDeviceInput ) {
-            NSLog( @"Could not create audio device input: %@", error );
-        }
-        if ( [self.captureSession canAddInput:audioDeviceInput] ) {
-            [self.captureSession addInput:audioDeviceInput];
-            self.audioDeviceInput = audioDeviceInput;
-            NSLog(@"%@", self.audioDeviceInput);
-        }
-        else {
-            NSLog( @"Could not add audio device input to the session" );
-        }
-    }
 }
 
 - (void)addDataOutputsToCaptureSession:(AVCaptureSession *)captureSession
@@ -252,7 +232,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     _videoConnection = [_videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
     if ( [_videoConnection isVideoStabilizationSupported] ) {
-        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeStandard];
+        [_videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeCinematic];
     }
     if (_devicePosition == AVCaptureDevicePositionFront) {
         if ( [_videoConnection isVideoOrientationSupported] ) {
@@ -261,21 +241,6 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         if ( [_videoConnection isVideoMirroringSupported] ) {
             [_videoConnection setVideoMirrored:YES];
         }
-    }
-    
-    // Audio
-    if (_devicePosition == AVCaptureDevicePositionFront) {
-        self.audioDataOutput = [AVCaptureAudioDataOutput new];
-        [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
-        if( [captureSession canAddOutput:_audioDataOutput] ){
-            [captureSession addOutput:_audioDataOutput];
-        } else {
-            NSLog(@"can't add output: %@", [_audioDataOutput description]);
-            if ( [[self delegate] respondsToSelector:@selector(coordinatorSessionConfigurationDidFail:)] ) {
-                [[self delegate] coordinatorSessionConfigurationDidFail:self];
-            }
-        }
-        _audioConnection = [_audioDataOutput connectionWithMediaType:AVMediaTypeAudio];
     }
 }
 
@@ -529,7 +494,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         
         // HACK: need a better way to get this format
         int targetHeight = 1080;
-        if (position == AVCaptureDevicePositionFront) targetHeight = 720;
+        if (position == AVCaptureDevicePositionFront) targetHeight = 960;
         
         // NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
         

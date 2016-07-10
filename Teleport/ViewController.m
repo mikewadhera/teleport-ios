@@ -49,13 +49,14 @@ static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCapt
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
 static const NSTimeInterval          TPPreviewFadeInInterval            = 1.0;
-static const NSTimeInterval          TPRecordFirstInterval              = 5.5;
+static const NSTimeInterval          TPRecordFirstInterval              = 4.0;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = TPPreviewFadeInInterval;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
+static const NSInteger               TPRecordBitrate                    = 7000000;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
-#define                              TPProgressBarWidth                 10+floorf((self.bounds.size.width*0.10))
-#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
+#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.05))
+#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.5]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
 static const BOOL                    TPProgressBarTrackShouldHide       = YES;
 #define                              TPProgressBarColor                 [UIColor redColor]
@@ -613,7 +614,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 //              AVVideoWidthKey : @(1280),
 //              AVVideoHeightKey : @(960),
 //              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
-              AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(5000000),
+              AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(TPRecordBitrate),
                                                        AVVideoExpectedSourceFrameRateKey : @(60),
                                                        AVVideoMaxKeyFrameIntervalKey : @(60),
                                                         AVVideoAllowFrameReorderingKey : @YES }
