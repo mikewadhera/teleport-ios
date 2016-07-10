@@ -49,7 +49,7 @@ static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCapt
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
 static const NSTimeInterval          TPPreviewFadeInInterval            = 1.0;
-static const NSTimeInterval          TPRecordFirstInterval              = 4.0;
+static const NSTimeInterval          TPRecordFirstInterval              = 3.5;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = TPPreviewFadeInInterval;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
@@ -462,6 +462,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
             
+            // Vibrate
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            
             // Disable layer setFrame animations
             [CATransaction begin];
             [CATransaction setDisableActions:YES];
@@ -484,8 +487,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [CATransaction commit];
             
             // Enter Grace period
-            // Vibrate alert, set camera preview barely visible
-            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            // Set camera preview barely visible
             [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
             secondRecordingStartTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordSecondGraceInterval block: ^{
                 // Exit Grace period

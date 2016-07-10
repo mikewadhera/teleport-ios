@@ -10,6 +10,7 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 @interface PreviewViewController ()
 
 @property (nonatomic) UIView *playerView;
+@property (nonatomic) UIView *fadeView;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) AVPlayer *secondPlayer;
@@ -82,33 +83,44 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     [_playerView.layer addSublayer:_secondPlayerLayer];
     [self.view addSubview:_playerView];
     
+    // Fade View
+    _fadeView = [[UIView alloc] initWithFrame:self.view.bounds];
+    _fadeView.backgroundColor = [UIColor whiteColor];
+    _fadeView.alpha = 0.9;
+    [self.view addSubview:_fadeView];
+    
     // Buttons
     _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, self.view.bounds.size.height, 65, 65)];
+    [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, topViewH-65/2, 65, 65)];
     [_advanceButton setImage:[UIImage imageNamed:@"green.png"] forState:UIControlStateNormal];
     [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
     [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
     [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
-    [_playerView addSubview:_advanceButton];
+    [self.view addSubview:_advanceButton];
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
     UIImage *cancelImage = [UIImage imageNamed:@"red.png"];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
-    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, self.view.bounds.size.height, 65, 65)];
+    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, topViewH-65/2, 65, 65)];
     [_cancelButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
     [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(cancel) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
-    [_playerView addSubview:_cancelButton];
+    [self.view addSubview:_cancelButton];
     
     [self addVideosToPlayers];
-    [self playVideos];
     
-    //[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-        [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, topViewH-65/2, 65, 65)];
-        [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, topViewH-65/2, 65, 65)];
-    //} completion:nil];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        [self playVideos];
+        [UIView animateWithDuration: 0.2
+                         animations:^{
+                             _fadeView.alpha = 0.0;
+                             _playerView.alpha = 0.9;
+                         } completion:^(BOOL finished) {
+                             
+                         }];
+    });
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
