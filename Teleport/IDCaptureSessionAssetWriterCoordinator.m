@@ -99,7 +99,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 - (void)startRunning
 {
-    dispatch_async( _sessionQueue, ^{
+    dispatch_sync( _sessionQueue, ^{
         [self addObservers];
         [_captureSession startRunning];
         _sessionRunning = [_captureSession isRunning];
@@ -108,7 +108,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 
 - (void)stopRunning
 {
-    dispatch_async( _sessionQueue, ^{
+    dispatch_sync( _sessionQueue, ^{
         // the captureSessionDidStopRunning method will stop recording if necessary as well, but we do it here so that the last video and audio samples are better aligned
         [self stopRecording]; // does nothing if we aren't currently recording
         [_captureSession stopRunning];

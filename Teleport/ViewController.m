@@ -85,6 +85,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)start;
 -(void)resume;
 -(void)cancel;
+-(CGFloat)barWidth;
 
 @end
 
@@ -107,6 +108,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
+@property (nonatomic, strong) UILabel *statusLabel;
 
 @end
 
@@ -119,6 +121,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     RecordTimer *secondRecordingStartTimer;
     RecordTimer *secondRecordingStopTimer;
     JPSVolumeButtonHandler *volumeHandler;
+    NSTimer *statusLabelTimer;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -190,10 +193,22 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _recordBarView = [[RecordProgressBarView alloc] initWithFrame:self.view.bounds];
     _recordBarView.delegate = self;
     
+    // Status Label
+    CGFloat barWidth = [_recordBarView barWidth];
+    CGFloat barPadding = 10;
+    CGFloat labelHeight = 10;
+    _statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(barWidth+barPadding,
+                                                             self.view.bounds.size.height - barWidth - barPadding - labelHeight,
+                                                             self.view.bounds.size.width - (2*barWidth)-barPadding,
+                                                             labelHeight)];
+    _statusLabel.textColor = [UIColor whiteColor];
+    _statusLabel.font = [UIFont systemFontOfSize:12.0];
+    
     [self.view.layer insertSublayer:_previewLayer atIndex:0];
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
     [self.view addSubview:_recordBarView];
+    [self.view addSubview:_statusLabel];
 }
 
 -(void)controllerResumedFromBackground
@@ -247,6 +262,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         }
     }
     
+    // Update status lable on minute change
+    [self addStatusLabelMinuteChangeTimer];
+    
     // We don't observe resign-to-background as that behavior is implicity handled by coordinatorSessionDidInterrupt:
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(controllerResumedFromBackground) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
@@ -263,6 +281,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self transitionToStatus:TPStateSessionStopping];
         }
     }
+    
+    [statusLabelTimer invalidate];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
@@ -328,6 +348,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _secondRecordingVisualCueSpinnerLayer.strokeColor = TPSpinnerBarColor.CGColor;
     _secondRecordingVisualCueSpinnerLayer.strokeStart = 0;
     _secondRecordingVisualCueSpinnerLayer.strokeEnd = 0;
+    _statusLabel.hidden = NO;
+    _statusLabel.text = nil;
+    [self updateStatusLabel];
     [CATransaction commit];
     
     // Clear player and enable preview
@@ -442,6 +465,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
+            [_statusLabel setHidden:YES];
             [_recordBarView start];
             [self startSecondRecordingVisualCue];
             firstRecordingStopTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordFirstInterval block:^{
@@ -572,6 +596,48 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
 }
 
+-(void)updateStatusLabel
+{
+    CLPlacemark *firstPlacemark = [_lastKnownPlacemarks firstObject];
+    NSString *location;
+    location = [firstPlacemark subLocality];
+    NSString *time;
+    NSDateFormatter *dateformater = [[NSDateFormatter alloc] init];
+    [dateformater setDateFormat:@"h:mm a"];
+    time = [dateformater stringFromDate:[NSDate date]];
+    if (location) {
+        BOOL animate = NO;
+        if (_statusLabel.text == nil) {
+            animate = YES;
+        }
+        _statusLabel.text = [NSString stringWithFormat:@"%@ • %@", location, time];
+        if (animate) {
+            _statusLabel.alpha = 0.0;
+            [UIView animateWithDuration:0.25 animations:^{
+                _statusLabel.alpha = 1.0;
+            }];
+        }
+    }
+}
+
+-(void)addStatusLabelMinuteChangeTimer
+{
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    NSDateComponents *components = [calendar components:NSSecondCalendarUnit fromDate:[NSDate date]];
+    NSInteger currentSecond = [components second];
+    
+    //+1 to ensure we fire right after the minute change
+    NSDate *fireDate = [[NSDate date] dateByAddingTimeInterval:60 - currentSecond + 1];
+    statusLabelTimer = [[NSTimer alloc] initWithFireDate:fireDate
+                                               interval:60
+                                                 target:self
+                                               selector:@selector(updateStatusLabel)
+                                               userInfo:nil
+                                                repeats:YES];
+    
+    [[NSRunLoop mainRunLoop] addTimer:statusLabelTimer forMode:NSDefaultRunLoopMode];
+}
+
 #pragma mark = RecordProgressBarViewDelegate methods
 
 - (void)recordProgressBarViewTap
@@ -680,6 +746,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             NSLog(@"Failed to reverse geocode: %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
         }
         _lastKnownPlacemarks = placemarks;
+        [self updateStatusLabel];
     }];
 }
 
@@ -886,6 +953,11 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)didSelectRecord:(id)sender
 {
     [self.delegate recordProgressBarViewTap];
+}
+
+-(CGFloat)barWidth
+{
+    return progressBarLayer.lineWidth;
 }
 
 @end

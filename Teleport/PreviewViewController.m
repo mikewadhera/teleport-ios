@@ -86,7 +86,6 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     // Fade View
     _fadeView = [[UIView alloc] initWithFrame:self.view.bounds];
     _fadeView.backgroundColor = [UIColor whiteColor];
-    _fadeView.alpha = 0.9;
     [self.view addSubview:_fadeView];
     
     // Buttons
@@ -116,7 +115,7 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
         [UIView animateWithDuration: 0.2
                          animations:^{
                              _fadeView.alpha = 0.0;
-                             _playerView.alpha = 0.9;
+                             _playerView.alpha = 1.0;
                          } completion:^(BOOL finished) {
                              
                          }];
