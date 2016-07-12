@@ -56,7 +56,7 @@ static const NSTimeInterval          TPRecordSecondGraceInterval        = TPPrev
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 static const NSInteger               TPRecordBitrate                    = 7000000;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
-#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.05))
+#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.066))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.5]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
 static const BOOL                    TPProgressBarTrackShouldHide       = YES;
