@@ -20,7 +20,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="awa-la-Cbo"/>
                     <connections>
-                        <segue destination="4zT-Yl-Jo9" kind="show" identifier="ShowPreview" animates="NO" id="ooX-ZJ-WQ7"/>
+                        <segue destination="4zT-Yl-Jo9" kind="show" identifier="ShowPreview" id="ooX-ZJ-WQ7"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -40,6 +40,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
+                    <navigationItem key="navigationItem" id="3CY-6I-c9a"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="6vu-VQ-JdH" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>

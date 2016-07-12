@@ -9,6 +9,7 @@
 #import "RecordTimer.h"
 #import "JPSVolumeButtonHandler.h"
 #import "TPUploadSession.h"
+#import "CECrossfadeAnimationController.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -89,7 +90,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 @end
 
-@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate, RecordProgressBarViewDelegate>
+@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate, RecordProgressBarViewDelegate, UINavigationControllerDelegate>
 
 @property (nonatomic) TPCameraSetupResult setupResult;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
@@ -105,10 +106,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) RecordProgressBarView *recordBarView;
 @property (nonatomic, copy) NSURL *firstVideoURL;
 @property (nonatomic, copy) NSURL *secondVideoURL;
+@property (nonatomic, strong) UIImage *firstVideoImage;
+@property (nonatomic, strong) UIImage *secondVideoImage;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic) CAShapeLayer *secondRecordingVisualCueSpinnerLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
+@property (nonatomic, strong) id animator;
 
 @end
 
@@ -130,6 +134,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.navigationController.delegate = self;
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -327,6 +333,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     PreviewViewController *vc = [segue destinationViewController];
     vc.firstVideoURL = _firstVideoURL;
     vc.secondVideoURL = _secondVideoURL;
+    vc.firstVideoImage = _firstVideoImage;
+    vc.secondVideoImage = _secondVideoImage;
     vc.location = _lastKnownLocation;
     vc.placemarks = _lastKnownPlacemarks;
 }
@@ -551,6 +559,15 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
+            AVAssetImageGenerator *imageGenerator;
+            AVURLAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
+            imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:firstAsset];
+            [imageGenerator setAppliesPreferredTrackTransform:YES];
+            _firstVideoImage = [UIImage imageWithCGImage:[imageGenerator copyCGImageAtTime:kCMTimeZero actualTime:nil error:nil]];
+            AVURLAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
+            imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:secondAsset];
+            [imageGenerator setAppliesPreferredTrackTransform:YES];
+            _secondVideoImage = [UIImage imageWithCGImage:[imageGenerator copyCGImageAtTime:kCMTimeZero actualTime:nil error:nil]];
             [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
         } else if (newStatus == TPStateRecordingCanceling) {
@@ -748,6 +765,21 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         _lastKnownPlacemarks = placemarks;
         [self updateStatusLabel];
     }];
+}
+
+#pragma mark - UINavigationControllerDelegate
+
+- (id<UIViewControllerAnimatedTransitioning>)navigationController:(UINavigationController *)navigationController
+                                  animationControllerForOperation:(UINavigationControllerOperation)operation
+                                               fromViewController:(UIViewController *)fromVC
+                                                 toViewController:(UIViewController *)toVC
+{
+    self.animator = nil;
+    if ([toVC class] == [PreviewViewController class]) {
+        self.animator = [CECrossfadeAnimationController new];
+        [self.animator setReverse:(operation == UINavigationControllerOperationPop)];
+    }
+    return self.animator;
 }
 
 #pragma mark Helpers

@@ -5,8 +5,6 @@
 
 #import "PreviewViewController.h"
 
-static const NSInteger        TPPlaybackMaxLoopCount  = 100;
-
 @interface PreviewViewController ()
 
 @property (nonatomic) UIView *playerView;
@@ -18,6 +16,8 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 @property (nonatomic) NSURL *videoURL;
 @property (nonatomic) UIButton *advanceButton;
 @property (nonatomic) UIButton *cancelButton;
+@property (nonatomic, strong) UIImageView *firstImageView;
+@property (nonatomic, strong) UIImageView *secondImageView;
 
 @end
 
@@ -32,6 +32,8 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 
 -(void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.view.backgroundColor = [UIColor whiteColor];
     
     NSNumber *fileSizeValue = nil;
     [_firstVideoURL getResourceValue:&fileSizeValue
@@ -78,15 +80,23 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     _secondPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
     _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
+    _firstImageView = [[UIImageView alloc] initWithImage:_firstVideoImage];
+    _firstImageView.clipsToBounds = YES;
+    _firstImageView.contentMode = UIViewContentModeScaleAspectFill;
+    _firstImageView.frame = topViewportRect;
+    _secondImageView = [[UIImageView alloc] initWithImage:_secondVideoImage];
+    _secondImageView.clipsToBounds = YES;
+    _secondImageView.contentMode = UIViewContentModeScaleAspectFill;
+    _secondImageView.frame = bottomViewportRect;
+    
     _playerView = [[UIView alloc] initWithFrame:self.view.bounds];
     [_playerView.layer addSublayer:_firstPlayerLayer];
     [_playerView.layer addSublayer:_secondPlayerLayer];
-    [self.view addSubview:_playerView];
+    _playerView.alpha = 0.0f;
     
-    // Fade View
-    _fadeView = [[UIView alloc] initWithFrame:self.view.bounds];
-    _fadeView.backgroundColor = [UIColor whiteColor];
-    [self.view addSubview:_fadeView];
+    [self.view addSubview:_firstImageView];
+    [self.view addSubview:_secondImageView];
+    [self.view addSubview:_playerView];
     
     // Buttons
     _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -110,18 +120,14 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     
     [self addVideosToPlayers];
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.2 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-        [self playVideos];
-        [UIView animateWithDuration: 0.2
-                         animations:^{
-                             _fadeView.alpha = 0.0;
-                             _playerView.alpha = 1.0;
-                         } completion:^(BOOL finished) {
-                             
-                         }];
-    });
-    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self playVideos];
 }
 
 -(void)viewWillDisappear:(BOOL)animated
@@ -129,6 +135,7 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     [super viewWillDisappear:animated];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
 }
 
 -(void)cancel
@@ -158,10 +165,8 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     // NOTE: We clip the to length of shorter duration
     AVAsset *shorterAsset = CMTimeGetSeconds(firstAsset.duration) > CMTimeGetSeconds(secondAsset.duration) ? secondAsset : firstAsset;
     CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, shorterAsset.duration);
-    for (NSUInteger i = 0; i < TPPlaybackMaxLoopCount; i++) {
-        [firstComposition insertTimeRange:timeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
-        [secondComposition insertTimeRange:timeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
-    }
+    [firstComposition insertTimeRange:timeRange ofAsset:firstAsset atTime:firstComposition.duration error:nil];
+    [secondComposition insertTimeRange:timeRange ofAsset:secondAsset atTime:secondComposition.duration error:nil];
     
     // Orientation fix
     AVAssetTrack *firstAssetVideoTrack = [firstAsset tracksWithMediaType:AVMediaTypeVideo].lastObject;
@@ -178,6 +183,8 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     AVPlayerItem *firstItem = [AVPlayerItem playerItemWithAsset:firstComposition];
     AVPlayerItem *secondItem = [AVPlayerItem playerItemWithAsset:secondComposition];
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didFinishPlaying:) name:AVPlayerItemDidPlayToEndTimeNotification object:shorterAsset==firstAsset?firstItem:secondItem];
+    
     [_firstPlayer replaceCurrentItemWithPlayerItem:firstItem];
     [_secondPlayer replaceCurrentItemWithPlayerItem:secondItem];
     
@@ -187,6 +194,7 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
 
 -(void)playVideos
 {
+    _playerView.alpha = 1.0;
     [self playAt:kCMTimeZero player:_firstPlayer];
     [self playAt:kCMTimeZero player:_secondPlayer];
 }
@@ -195,10 +203,24 @@ static const NSInteger        TPPlaybackMaxLoopCount  = 100;
     if(player.status == AVPlayerStatusReadyToPlay && player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
         [player setRate:1.0 time:time atHostTime:CMClockGetTime(syncClock)];
     } else {
+        NSLog(@"NOT READY!!");
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             [self playAt:time player:player];
         });
     }
+}
+
+-(void)didFinishPlaying:(NSNotification *) notification
+{
+    NSLog(@"didFinishPlaying");
+    NSTimeInterval duration = 0.5f;
+    [UIView animateWithDuration:duration animations:^{
+        _playerView.alpha = 0.0f;
+    } completion:^(BOOL finished) {
+        [_firstPlayer seekToTime:kCMTimeZero];
+        [_secondPlayer seekToTime:kCMTimeZero];
+        [self performSelector:@selector(playVideos) withObject:nil afterDelay:0.1];
+    }];
 }
 
 -(void)springOut:(UIButton*)sender

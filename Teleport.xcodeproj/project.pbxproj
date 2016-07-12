@@ -18,6 +18,17 @@
 		FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = FB15009F1D2C635100DB2251 /* RecordTimer.m */; };
 		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
 		FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AD1D21FAA8001F1F55 /* red@2x.png */; };
+		FB499B981D3461480015DA2A /* CECardsAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B831D3461480015DA2A /* CECardsAnimationController.m */; };
+		FB499B991D3461480015DA2A /* CECrossfadeAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B851D3461480015DA2A /* CECrossfadeAnimationController.m */; };
+		FB499B9A1D3461480015DA2A /* CECubeAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B871D3461480015DA2A /* CECubeAnimationController.m */; };
+		FB499B9B1D3461480015DA2A /* CEExplodeAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B891D3461480015DA2A /* CEExplodeAnimationController.m */; };
+		FB499B9C1D3461480015DA2A /* CEFlipAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B8B1D3461480015DA2A /* CEFlipAnimationController.m */; };
+		FB499B9D1D3461480015DA2A /* CEFoldAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B8D1D3461480015DA2A /* CEFoldAnimationController.m */; };
+		FB499B9E1D3461480015DA2A /* CENatGeoAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B8F1D3461480015DA2A /* CENatGeoAnimationController.m */; };
+		FB499B9F1D3461480015DA2A /* CEPanAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B911D3461480015DA2A /* CEPanAnimationController.m */; };
+		FB499BA01D3461480015DA2A /* CEPortalAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B931D3461480015DA2A /* CEPortalAnimationController.m */; };
+		FB499BA11D3461480015DA2A /* CEReversibleAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B951D3461480015DA2A /* CEReversibleAnimationController.m */; };
+		FB499BA21D3461480015DA2A /* CETurnAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B971D3461480015DA2A /* CETurnAnimationController.m */; };
 		FB4BAA7B1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = FB4BAA7A1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m */; };
 		FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = FB6EDDB61D1B4731008410FD /* TPGeocoder.m */; };
 		FB6EDDB91D1B6221008410FD /* send@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6EDDB81D1B6221008410FD /* send@2x.png */; };
@@ -79,6 +90,28 @@
 		FB15009F1D2C635100DB2251 /* RecordTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RecordTimer.m; sourceTree = "<group>"; };
 		FB35E0AC1D21FAA8001F1F55 /* green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "green@2x.png"; sourceTree = "<group>"; };
 		FB35E0AD1D21FAA8001F1F55 /* red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "red@2x.png"; sourceTree = "<group>"; };
+		FB499B821D3461480015DA2A /* CECardsAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CECardsAnimationController.h; sourceTree = "<group>"; };
+		FB499B831D3461480015DA2A /* CECardsAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CECardsAnimationController.m; sourceTree = "<group>"; };
+		FB499B841D3461480015DA2A /* CECrossfadeAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CECrossfadeAnimationController.h; sourceTree = "<group>"; };
+		FB499B851D3461480015DA2A /* CECrossfadeAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CECrossfadeAnimationController.m; sourceTree = "<group>"; };
+		FB499B861D3461480015DA2A /* CECubeAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CECubeAnimationController.h; sourceTree = "<group>"; };
+		FB499B871D3461480015DA2A /* CECubeAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CECubeAnimationController.m; sourceTree = "<group>"; };
+		FB499B881D3461480015DA2A /* CEExplodeAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEExplodeAnimationController.h; sourceTree = "<group>"; };
+		FB499B891D3461480015DA2A /* CEExplodeAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CEExplodeAnimationController.m; sourceTree = "<group>"; };
+		FB499B8A1D3461480015DA2A /* CEFlipAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEFlipAnimationController.h; sourceTree = "<group>"; };
+		FB499B8B1D3461480015DA2A /* CEFlipAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CEFlipAnimationController.m; sourceTree = "<group>"; };
+		FB499B8C1D3461480015DA2A /* CEFoldAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEFoldAnimationController.h; sourceTree = "<group>"; };
+		FB499B8D1D3461480015DA2A /* CEFoldAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CEFoldAnimationController.m; sourceTree = "<group>"; };
+		FB499B8E1D3461480015DA2A /* CENatGeoAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CENatGeoAnimationController.h; sourceTree = "<group>"; };
+		FB499B8F1D3461480015DA2A /* CENatGeoAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CENatGeoAnimationController.m; sourceTree = "<group>"; };
+		FB499B901D3461480015DA2A /* CEPanAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEPanAnimationController.h; sourceTree = "<group>"; };
+		FB499B911D3461480015DA2A /* CEPanAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CEPanAnimationController.m; sourceTree = "<group>"; };
+		FB499B921D3461480015DA2A /* CEPortalAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEPortalAnimationController.h; sourceTree = "<group>"; };
+		FB499B931D3461480015DA2A /* CEPortalAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CEPortalAnimationController.m; sourceTree = "<group>"; };
+		FB499B941D3461480015DA2A /* CEReversibleAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CEReversibleAnimationController.h; sourceTree = "<group>"; };
+		FB499B951D3461480015DA2A /* CEReversibleAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CEReversibleAnimationController.m; sourceTree = "<group>"; };
+		FB499B961D3461480015DA2A /* CETurnAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CETurnAnimationController.h; sourceTree = "<group>"; };
+		FB499B971D3461480015DA2A /* CETurnAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CETurnAnimationController.m; sourceTree = "<group>"; };
 		FB4BAA791D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JPSVolumeButtonHandler.h; sourceTree = "<group>"; };
 		FB4BAA7A1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JPSVolumeButtonHandler.m; sourceTree = "<group>"; };
 		FB6EDDB51D1B4731008410FD /* TPGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TPGeocoder.h; sourceTree = "<group>"; };
@@ -157,6 +190,7 @@
 		FB0D9D541D0622DA0024CDC4 /* Teleport */ = {
 			isa = PBXGroup;
 			children = (
+				FB499B811D3461480015DA2A /* AnimationControllers */,
 				FB4BAA781D2F6DCD0063E2A7 /* JPSVolumeButtonHandler */,
 				FB35E0AC1D21FAA8001F1F55 /* green@2x.png */,
 				FB35E0AD1D21FAA8001F1F55 /* red@2x.png */,
@@ -194,6 +228,35 @@
 				FB0D9D561D0622DA0024CDC4 /* main.m */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		FB499B811D3461480015DA2A /* AnimationControllers */ = {
+			isa = PBXGroup;
+			children = (
+				FB499B821D3461480015DA2A /* CECardsAnimationController.h */,
+				FB499B831D3461480015DA2A /* CECardsAnimationController.m */,
+				FB499B841D3461480015DA2A /* CECrossfadeAnimationController.h */,
+				FB499B851D3461480015DA2A /* CECrossfadeAnimationController.m */,
+				FB499B861D3461480015DA2A /* CECubeAnimationController.h */,
+				FB499B871D3461480015DA2A /* CECubeAnimationController.m */,
+				FB499B881D3461480015DA2A /* CEExplodeAnimationController.h */,
+				FB499B891D3461480015DA2A /* CEExplodeAnimationController.m */,
+				FB499B8A1D3461480015DA2A /* CEFlipAnimationController.h */,
+				FB499B8B1D3461480015DA2A /* CEFlipAnimationController.m */,
+				FB499B8C1D3461480015DA2A /* CEFoldAnimationController.h */,
+				FB499B8D1D3461480015DA2A /* CEFoldAnimationController.m */,
+				FB499B8E1D3461480015DA2A /* CENatGeoAnimationController.h */,
+				FB499B8F1D3461480015DA2A /* CENatGeoAnimationController.m */,
+				FB499B901D3461480015DA2A /* CEPanAnimationController.h */,
+				FB499B911D3461480015DA2A /* CEPanAnimationController.m */,
+				FB499B921D3461480015DA2A /* CEPortalAnimationController.h */,
+				FB499B931D3461480015DA2A /* CEPortalAnimationController.m */,
+				FB499B941D3461480015DA2A /* CEReversibleAnimationController.h */,
+				FB499B951D3461480015DA2A /* CEReversibleAnimationController.m */,
+				FB499B961D3461480015DA2A /* CETurnAnimationController.h */,
+				FB499B971D3461480015DA2A /* CETurnAnimationController.m */,
+			);
+			path = AnimationControllers;
 			sourceTree = "<group>";
 		};
 		FB4BAA781D2F6DCD0063E2A7 /* JPSVolumeButtonHandler */ = {
@@ -301,16 +364,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FB499B9B1D3461480015DA2A /* CEExplodeAnimationController.m in Sources */,
+				FB499B9A1D3461480015DA2A /* CECubeAnimationController.m in Sources */,
 				FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */,
 				FB0D9D5D1D0622DA0024CDC4 /* ViewController.m in Sources */,
+				FB499B991D3461480015DA2A /* CECrossfadeAnimationController.m in Sources */,
 				FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */,
 				FB4BAA7B1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m in Sources */,
+				FB499B9D1D3461480015DA2A /* CEFoldAnimationController.m in Sources */,
+				FB499B9F1D3461480015DA2A /* CEPanAnimationController.m in Sources */,
+				FB499B981D3461480015DA2A /* CECardsAnimationController.m in Sources */,
 				FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */,
+				FB499B9E1D3461480015DA2A /* CENatGeoAnimationController.m in Sources */,
+				FB499BA21D3461480015DA2A /* CETurnAnimationController.m in Sources */,
 				FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */,
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
 				FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */,
 				FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */,
 				FBEF04581D305FC5007FFB48 /* TPUploadSession.m in Sources */,
+				FB499BA11D3461480015DA2A /* CEReversibleAnimationController.m in Sources */,
+				FB499B9C1D3461480015DA2A /* CEFlipAnimationController.m in Sources */,
+				FB499BA01D3461480015DA2A /* CEPortalAnimationController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
