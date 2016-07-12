@@ -214,7 +214,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                                                              self.view.bounds.size.width - (2*barWidth)-barPadding,
                                                              labelHeight)];
     _statusLabel.textColor = [UIColor whiteColor];
-    _statusLabel.font = [UIFont systemFontOfSize:12.0];
+    _statusLabel.font = [UIFont systemFontOfSize:13.5];
     
     [self.view.layer insertSublayer:_previewLayer atIndex:0];
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
@@ -1001,7 +1001,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         [progressBarTrackLayer setFillColor:[UIColor clearColor].CGColor];
         progressBarTrackLayer.path = progressBarLayer.path;
         tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSelectRecord:)];
-        [self addGestureRecognizer:tapRecognizer];
+        //[self addGestureRecognizer:tapRecognizer];
         [self reset];
     }
     return self;
