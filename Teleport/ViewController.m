@@ -163,6 +163,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     // Create the preview
     _previewLayer = _sessionCoordinator.previewLayer;
     _previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    _previewLayer.connection.videoOrientation = AVCaptureVideoOrientationLandscapeRight;
+    _previewLayer.transform = CATransform3DMakeRotation(90.0 / 180.0 * M_PI, 0.0, 0.0, 1.0);
     [_previewLayer setBackgroundColor:[[UIColor blackColor] CGColor]];
     
     // Create the player
