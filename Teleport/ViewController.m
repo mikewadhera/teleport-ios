@@ -10,6 +10,9 @@
 #import "JPSVolumeButtonHandler.h"
 #import "TPUploadSession.h"
 #import "CECrossfadeAnimationController.h"
+#import "Teleport-Swift.h"
+#import "ListViewController.h"
+#import "FRDLivelyButton.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -90,7 +93,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 @end
 
-@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate, RecordProgressBarViewDelegate, UINavigationControllerDelegate>
+@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate, RecordProgressBarViewDelegate, UINavigationControllerDelegate, EasyTransitionDelegate>
 
 @property (nonatomic) TPCameraSetupResult setupResult;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
@@ -113,6 +116,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) id animator;
+@property (nonatomic, strong) EasyTransition *transition;
 
 @end
 
@@ -126,6 +130,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     RecordTimer *secondRecordingStopTimer;
     JPSVolumeButtonHandler *volumeHandler;
     NSTimer *statusLabelTimer;
+    FRDLivelyButton *button;
+    ListViewController *menuController;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -215,6 +221,21 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
     [self.view addSubview:_recordBarView];
     [self.view addSubview:_statusLabel];
+    
+    // Menu
+    menuController = [self.storyboard instantiateViewControllerWithIdentifier:@"menu"];
+    
+    // Button
+    NSInteger buttonSize = 44;
+    button = [[FRDLivelyButton alloc] initWithFrame:CGRectMake(self.view.bounds.size.width-barWidth-barPadding-buttonSize+10,self.view.bounds.size.height - barWidth - barPadding - buttonSize+10,buttonSize,buttonSize)];
+    [button setStyle:kFRDLivelyButtonStyleHamburger animated:NO];
+    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(1.0f),
+                          kFRDLivelyButtonHighlightedColor: [UIColor colorWithWhite:0.8 alpha:1.0],
+                          kFRDLivelyButtonColor: [UIColor whiteColor]
+                          }];
+    button.alpha = 0.5;
+    [button addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
+    [self.navigationController.view.window addSubview:button];
 }
 
 -(void)controllerResumedFromBackground
@@ -273,6 +294,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     // We don't observe resign-to-background as that behavior is implicity handled by coordinatorSessionDidInterrupt:
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(controllerResumedFromBackground) name:UIApplicationWillEnterForegroundNotification object:nil];
+}
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [button setHidden:YES];
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -359,6 +387,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _statusLabel.hidden = NO;
     _statusLabel.text = nil;
     [self updateStatusLabel];
+    button.hidden = NO;
     [CATransaction commit];
     
     // Clear player and enable preview
@@ -400,6 +429,37 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [self transitionToStatus:TPStateRecordingCanceling];
         }
     }
+}
+
+-(void)openMenu
+{
+    [self onMenuOpen];
+    _transition = [[EasyTransition alloc] initWithAttachedViewController:menuController];
+    _transition.delegate = self;
+    _transition.transitionDuration = 0.2;
+    _transition.direction = UIRectEdgeRight;
+    _transition.margins = UIEdgeInsetsMake(0, 100, 0, 0);
+    [self presentViewController:menuController animated:YES completion:nil];
+}
+
+-(void)closeMenu
+{
+    [self onMenuClose];
+    [menuController dismissViewControllerAnimated:YES completion:nil];
+}
+
+-(void)onMenuOpen
+{
+    [button setStyle:kFRDLivelyButtonStyleClose animated:YES];
+    [button removeTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
+    [button addTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
+}
+
+-(void)onMenuClose
+{
+    [button setStyle:kFRDLivelyButtonStyleHamburger animated:YES];
+    [button removeTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
+    [button addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
 }
 
 // call under @synchonized( self )
@@ -473,6 +533,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
+            [button setHidden:YES];
             [_statusLabel setHidden:YES];
             [_recordBarView start];
             [self startSecondRecordingVisualCue];
@@ -751,6 +812,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             }
         }
     }
+}
+
+#pragma mark = EasyTransitionDelegate methods
+
+-(void)transitionWillDismiss
+{
+    [self onMenuClose];
 }
 
 #pragma mark = CLLocationManager methods

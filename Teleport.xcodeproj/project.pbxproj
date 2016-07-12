@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FB0263D51D348E9C005B2F67 /* EasyTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0263D31D348E9C005B2F67 /* EasyTransition.swift */; };
+		FB0263D61D348E9C005B2F67 /* UIView+Constraints.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0263D41D348E9C005B2F67 /* UIView+Constraints.swift */; };
+		FB0263D91D3492A2005B2F67 /* ListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0263D81D3492A2005B2F67 /* ListViewController.m */; };
+		FB0263DD1D34ACBA005B2F67 /* FRDLivelyButton.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0263DC1D34ACBA005B2F67 /* FRDLivelyButton.m */; };
 		FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */; };
 		FB0CB41E1D08BBBA00125716 /* IDAssetWriterCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0CB41A1D08BBBA00125716 /* IDAssetWriterCoordinator.m */; };
 		FB0D9D571D0622DA0024CDC4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0D9D561D0622DA0024CDC4 /* main.m */; };
@@ -72,6 +76,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FB0263D11D348E9B005B2F67 /* Teleport-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Teleport-Bridging-Header.h"; sourceTree = "<group>"; };
+		FB0263D21D348E9C005B2F67 /* EasyTransition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EasyTransition.h; sourceTree = "<group>"; };
+		FB0263D31D348E9C005B2F67 /* EasyTransition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EasyTransition.swift; sourceTree = "<group>"; };
+		FB0263D41D348E9C005B2F67 /* UIView+Constraints.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIView+Constraints.swift"; sourceTree = "<group>"; };
+		FB0263D71D3492A2005B2F67 /* ListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ListViewController.h; sourceTree = "<group>"; };
+		FB0263D81D3492A2005B2F67 /* ListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ListViewController.m; sourceTree = "<group>"; };
+		FB0263DB1D34ACBA005B2F67 /* FRDLivelyButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FRDLivelyButton.h; sourceTree = "<group>"; };
+		FB0263DC1D34ACBA005B2F67 /* FRDLivelyButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FRDLivelyButton.m; sourceTree = "<group>"; };
 		FB0CB4171D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDCaptureSessionAssetWriterCoordinator.h; sourceTree = "<group>"; };
 		FB0CB4181D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IDCaptureSessionAssetWriterCoordinator.m; sourceTree = "<group>"; };
 		FB0CB4191D08BBBA00125716 /* IDAssetWriterCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IDAssetWriterCoordinator.h; sourceTree = "<group>"; };
@@ -153,6 +165,25 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FB0263D01D348E87005B2F67 /* EasyTransition */ = {
+			isa = PBXGroup;
+			children = (
+				FB0263D21D348E9C005B2F67 /* EasyTransition.h */,
+				FB0263D31D348E9C005B2F67 /* EasyTransition.swift */,
+				FB0263D41D348E9C005B2F67 /* UIView+Constraints.swift */,
+			);
+			name = EasyTransition;
+			sourceTree = "<group>";
+		};
+		FB0263DA1D34ACBA005B2F67 /* FRDLivelyButton */ = {
+			isa = PBXGroup;
+			children = (
+				FB0263DB1D34ACBA005B2F67 /* FRDLivelyButton.h */,
+				FB0263DC1D34ACBA005B2F67 /* FRDLivelyButton.m */,
+			);
+			path = FRDLivelyButton;
+			sourceTree = "<group>";
+		};
 		FB0CB4161D08BB7C00125716 /* IDCaptureSessionAssetWriterCoordinator */ = {
 			isa = PBXGroup;
 			children = (
@@ -190,6 +221,9 @@
 		FB0D9D541D0622DA0024CDC4 /* Teleport */ = {
 			isa = PBXGroup;
 			children = (
+				FB0263DA1D34ACBA005B2F67 /* FRDLivelyButton */,
+				FB0263D11D348E9B005B2F67 /* Teleport-Bridging-Header.h */,
+				FB0263D01D348E87005B2F67 /* EasyTransition */,
 				FB499B811D3461480015DA2A /* AnimationControllers */,
 				FB4BAA781D2F6DCD0063E2A7 /* JPSVolumeButtonHandler */,
 				FB35E0AC1D21FAA8001F1F55 /* green@2x.png */,
@@ -205,6 +239,8 @@
 				FB0D9D591D0622DA0024CDC4 /* AppDelegate.m */,
 				FB0D9D5B1D0622DA0024CDC4 /* ViewController.h */,
 				FB0D9D5C1D0622DA0024CDC4 /* ViewController.m */,
+				FB0263D71D3492A2005B2F67 /* ListViewController.h */,
+				FB0263D81D3492A2005B2F67 /* ListViewController.m */,
 				FBF38E0E1D10D00300F7D881 /* PreviewViewController.h */,
 				FBF38E0F1D10D00300F7D881 /* PreviewViewController.m */,
 				FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */,
@@ -366,10 +402,12 @@
 			files = (
 				FB499B9B1D3461480015DA2A /* CEExplodeAnimationController.m in Sources */,
 				FB499B9A1D3461480015DA2A /* CECubeAnimationController.m in Sources */,
+				FB0263D91D3492A2005B2F67 /* ListViewController.m in Sources */,
 				FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */,
 				FB0D9D5D1D0622DA0024CDC4 /* ViewController.m in Sources */,
 				FB499B991D3461480015DA2A /* CECrossfadeAnimationController.m in Sources */,
 				FB0CB41D1D08BBBA00125716 /* IDCaptureSessionAssetWriterCoordinator.m in Sources */,
+				FB0263D51D348E9C005B2F67 /* EasyTransition.swift in Sources */,
 				FB4BAA7B1D2F6DCD0063E2A7 /* JPSVolumeButtonHandler.m in Sources */,
 				FB499B9D1D3461480015DA2A /* CEFoldAnimationController.m in Sources */,
 				FB499B9F1D3461480015DA2A /* CEPanAnimationController.m in Sources */,
@@ -382,8 +420,10 @@
 				FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */,
 				FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */,
 				FBEF04581D305FC5007FFB48 /* TPUploadSession.m in Sources */,
+				FB0263D61D348E9C005B2F67 /* UIView+Constraints.swift in Sources */,
 				FB499BA11D3461480015DA2A /* CEReversibleAnimationController.m in Sources */,
 				FB499B9C1D3461480015DA2A /* CEFlipAnimationController.m in Sources */,
+				FB0263DD1D34ACBA005B2F67 /* FRDLivelyButton.m in Sources */,
 				FB499BA01D3461480015DA2A /* CEPortalAnimationController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -496,6 +536,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				DEFINES_MODULE = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -504,6 +546,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.teleport.Teleport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Teleport/Teleport-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
@@ -511,6 +555,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				DEFINES_MODULE = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -519,6 +565,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.teleport.Teleport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Teleport/Teleport-Bridging-Header.h";
 			};
 			name = Release;
 		};
