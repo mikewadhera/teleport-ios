@@ -13,6 +13,7 @@
 #import "Teleport-Swift.h"
 #import "ListViewController.h"
 #import "FRDLivelyButton.h"
+#import "Teleport.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -96,8 +97,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) TPCameraSetupResult setupResult;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
 @property (nonatomic, strong) CLLocationManager *locationManager;
-@property (nonatomic, strong) CLLocation *lastKnownLocation;
-@property (nonatomic) NSArray *lastKnownPlacemarks;
 @property (nonatomic) TPGeocoder *geocoder;
 
 @property (nonatomic) TPState status;
@@ -105,14 +104,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) RecordProgressBarView *recordBarView;
-@property (nonatomic, copy) NSURL *firstVideoURL;
-@property (nonatomic, copy) NSURL *secondVideoURL;
 @property (nonatomic) CALayer *firstRecordingVisualCueLayer;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) id animator;
 @property (nonatomic, strong) EasyTransition *transition;
+@property (nonatomic, strong) Teleport *teleport;
 
 @end
 
@@ -350,10 +348,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     PreviewViewController *vc = [segue destinationViewController];
-    vc.firstVideoURL = _firstVideoURL;
-    vc.secondVideoURL = _secondVideoURL;
-    vc.location = _lastKnownLocation;
-    vc.placemarks = _lastKnownPlacemarks;
+    vc.teleport = _teleport;
+    vc.menuEnabled = YES;
 }
 
 -(void)reset
@@ -466,12 +462,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     if (oldStatus != newStatus) {
         if (newStatus == TPStateSessionStarting) {
             
-            // Initialize session-owned state
-            // Note: We never clear these on stop so we can reference in cleanup code
-            _lastKnownLocation = nil;
-            _lastKnownPlacemarks = nil;
-            _firstVideoURL = nil;
-            _secondVideoURL = nil;
+            // New teleport
+            _teleport = [Teleport new];
+            _teleport.id = [[NSUUID UUID] UUIDString];
             
             // Set initial views
             [self reset];
@@ -510,6 +503,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingFirstStarting) {
             
             assertFrom(TPStateRecordingIdle);
+            
+            // Record Timestamp
+            _teleport.timestamp = [NSDate date];
             
             // Prestart progress bar
             [_recordBarView prestart];
@@ -557,9 +553,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             [CATransaction setDisableActions:YES];
             
             // Load and show first recording
+            NSURL *firstVideoURL = [NSURL fileURLWithPath:[_teleport pathForVideo1]];
             [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem
-                                                            playerItemWithAsset:[AVAsset
-                                                                                 assetWithURL:_firstVideoURL]]];
+                                                            playerItemWithAsset:[AVAsset assetWithURL:firstVideoURL]]];
             [_firstPlayer seekToTime:kCMTimeZero];
             [_firstPlayerLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
             
@@ -614,16 +610,15 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         } else if (newStatus == TPStateRecordingCompleted) {
             
             assertFrom(TPStateRecordingSecondCompleted);
-            AVAssetImageGenerator *imageGenerator;
             [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
         } else if (newStatus == TPStateRecordingCanceling) {
             
             BOOL anyRecorded = [self cancelRecording];
             [self reset];
-            // Cleanup first canceled recording (if any)
+            // Cleanup first canceled recording cache (if any)
             // We wait to do this after -reset as player shows file
-            if (_firstVideoURL) [[NSFileManager defaultManager] removeItemAtPath:[_firstVideoURL path] error:nil];
+            [Teleport cleanupCaches:_teleport];
             
             // Check if -cancelRecording returned NO, if so we are responsible for transitioning to Canceled
             // In the normal case we are transitioned to Canceled by coordinator's didFinishRecordingToOutputFileURL
@@ -663,19 +658,16 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)updateStatusLabel
 {
-    CLPlacemark *firstPlacemark = [_lastKnownPlacemarks firstObject];
-    NSString *location;
-    location = [firstPlacemark subLocality];
     NSString *time;
     NSDateFormatter *dateformater = [[NSDateFormatter alloc] init];
     [dateformater setDateFormat:@"h:mm a"];
     time = [dateformater stringFromDate:[NSDate date]];
-    if (location) {
+    if (_teleport.location) {
         BOOL animate = NO;
         if (_statusLabel.text == nil) {
             animate = YES;
         }
-        _statusLabel.text = [NSString stringWithFormat:@"%@ • %@", location, time];
+        _statusLabel.text = [NSString stringWithFormat:@"%@ • %@", _teleport.location, time];
         if (animate) {
             _statusLabel.alpha = 0.0;
             [UIView animateWithDuration:0.25 animations:^{
@@ -781,19 +773,24 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         success = [error.userInfo[AVErrorRecordingSuccessfullyFinishedKey] boolValue];
     }
     if ( success ) {
+        // Cache then cleanup recording
+        dispatch_block_t cleanup = ^{
+            [[NSFileManager defaultManager] removeItemAtPath:[outputFileURL path] error:nil];
+        };
         if (_status == TPStateRecordingFirstCompleting) {
-            _firstVideoURL = outputFileURL;
+            [Teleport cacheVideo1:_teleport URL:outputFileURL];
+            cleanup();
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingFirstCompleted];
             }
         } else if (_status == TPStateRecordingSecondCompleting) {
-            _secondVideoURL = outputFileURL;
+            [Teleport cacheVideo2:_teleport URL:outputFileURL];
+            cleanup();
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingSecondCompleted];
             }
         } else if (_status == TPStateRecordingCanceling) {
-            // Cleanup current canceled recording
-            [[NSFileManager defaultManager] removeItemAtPath:[outputFileURL path] error:nil];
+            cleanup();
             @synchronized (self) {
                 [self transitionToStatus:TPStateRecordingCanceled];
             }
@@ -811,13 +808,17 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 #pragma mark = CLLocationManager methods
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation {
-    _lastKnownLocation = newLocation;
+    _teleport.latitude = newLocation.coordinate.latitude;
+    _teleport.longitude = newLocation.coordinate.longitude;
     NSLog(@"NewLocation %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
-    [_geocoder reverseGeocode:_lastKnownLocation completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
+    [_geocoder reverseGeocode:newLocation completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
         if (error) {
             NSLog(@"Failed to reverse geocode: %f %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
         }
-        _lastKnownPlacemarks = placemarks;
+        CLPlacemark *firstPlacemark = [placemarks firstObject];
+        NSString *location;
+        location = [firstPlacemark subLocality];
+        _teleport.location = location;
         [self updateStatusLabel];
     }];
 }

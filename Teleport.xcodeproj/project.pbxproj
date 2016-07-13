@@ -26,6 +26,7 @@
 		FB3E06DB1D35C27000A526E0 /* Realm.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FB3E06D91D35C27000A526E0 /* Realm.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FB3E06DF1D35FB6700A526E0 /* MaterialDesignSymbol.m in Sources */ = {isa = PBXBuildFile; fileRef = FB3E06DE1D35FB6700A526E0 /* MaterialDesignSymbol.m */; };
 		FB3E06E11D35FBBF00A526E0 /* material-design-icons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FB3E06E01D35FB7C00A526E0 /* material-design-icons.ttf */; };
+		FB3E06E41D360DE600A526E0 /* Teleport.m in Sources */ = {isa = PBXBuildFile; fileRef = FB3E06E31D360DE600A526E0 /* Teleport.m */; };
 		FB499B981D3461480015DA2A /* CECardsAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B831D3461480015DA2A /* CECardsAnimationController.m */; };
 		FB499B991D3461480015DA2A /* CECrossfadeAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B851D3461480015DA2A /* CECrossfadeAnimationController.m */; };
 		FB499B9A1D3461480015DA2A /* CECubeAnimationController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB499B871D3461480015DA2A /* CECubeAnimationController.m */; };
@@ -111,6 +112,8 @@
 		FB3E06DD1D35FB6700A526E0 /* MaterialDesignSymbol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MaterialDesignSymbol.h; sourceTree = "<group>"; };
 		FB3E06DE1D35FB6700A526E0 /* MaterialDesignSymbol.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MaterialDesignSymbol.m; sourceTree = "<group>"; };
 		FB3E06E01D35FB7C00A526E0 /* material-design-icons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "material-design-icons.ttf"; sourceTree = "<group>"; };
+		FB3E06E21D360DE600A526E0 /* Teleport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Teleport.h; sourceTree = "<group>"; };
+		FB3E06E31D360DE600A526E0 /* Teleport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Teleport.m; sourceTree = "<group>"; };
 		FB499B821D3461480015DA2A /* CECardsAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CECardsAnimationController.h; sourceTree = "<group>"; };
 		FB499B831D3461480015DA2A /* CECardsAnimationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CECardsAnimationController.m; sourceTree = "<group>"; };
 		FB499B841D3461480015DA2A /* CECrossfadeAnimationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CECrossfadeAnimationController.h; sourceTree = "<group>"; };
@@ -266,6 +269,8 @@
 				FB15009F1D2C635100DB2251 /* RecordTimer.m */,
 				FBEF04561D305FC5007FFB48 /* TPUploadSession.h */,
 				FBEF04571D305FC5007FFB48 /* TPUploadSession.m */,
+				FB3E06E21D360DE600A526E0 /* Teleport.h */,
+				FB3E06E31D360DE600A526E0 /* Teleport.m */,
 			);
 			path = Teleport;
 			sourceTree = "<group>";
@@ -442,6 +447,7 @@
 				FB0D9D571D0622DA0024CDC4 /* main.m in Sources */,
 				FB6EDDB71D1B4731008410FD /* TPGeocoder.m in Sources */,
 				FB3E06DF1D35FB6700A526E0 /* MaterialDesignSymbol.m in Sources */,
+				FB3E06E41D360DE600A526E0 /* Teleport.m in Sources */,
 				FBF38E101D10D00300F7D881 /* PreviewViewController.m in Sources */,
 				FBEF04581D305FC5007FFB48 /* TPUploadSession.m in Sources */,
 				FB0263D61D348E9C005B2F67 /* UIView+Constraints.swift in Sources */,

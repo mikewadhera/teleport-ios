@@ -1,11 +1,10 @@
 
 #import <UIKit/UIKit.h>
+#import "Teleport.h"
 
 @interface PreviewViewController : UIViewController
 
-@property (nonatomic, copy) NSURL *firstVideoURL;
-@property (nonatomic, copy) NSURL *secondVideoURL;
-@property (nonatomic, copy) CLLocation *location;
-@property (nonatomic) NSArray *placemarks;
+@property (nonatomic, strong) Teleport *teleport;
+@property (nonatomic) BOOL menuEnabled;
 
 @end

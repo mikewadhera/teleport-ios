@@ -144,7 +144,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     }
     
     NSString *outputFileName = [NSProcessInfo processInfo].globallyUniqueString;
-    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mov"]];
+    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:[outputFileName stringByAppendingPathExtension:@"mp4"]];
     _recordingURL = [NSURL fileURLWithPath:outputFilePath];
 
     self.assetWriterCoordinator = [[IDAssetWriterCoordinator alloc] initWithURL:_recordingURL];

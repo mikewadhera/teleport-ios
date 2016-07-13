@@ -13,7 +13,6 @@
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) AVPlayer *secondPlayer;
 @property (nonatomic) AVPlayerLayer *secondPlayerLayer;
-@property (nonatomic) NSURL *videoURL;
 @property (nonatomic) UIVisualEffectView *menuView;
 @property (nonatomic) UIButton *advanceButton;
 @property (nonatomic) UIButton *cancelButton;
@@ -36,18 +35,18 @@
     self.view.backgroundColor = [UIColor whiteColor];
     
     NSNumber *fileSizeValue = nil;
-    [_firstVideoURL getResourceValue:&fileSizeValue
+    [[NSURL fileURLWithPath:[_teleport pathForVideo1]] getResourceValue:&fileSizeValue
                        forKey:NSURLFileSizeKey
                         error:nil];
     if (fileSizeValue) {
-        NSLog(@"value for %@ is %f", _firstVideoURL, [fileSizeValue floatValue]/1024.0f/1024.0f);
+        NSLog(@"value for %@ is %f", [_teleport pathForVideo1], [fileSizeValue floatValue]/1024.0f/1024.0f);
     }
     NSNumber *fileSizeValue2 = nil;
-    [_secondVideoURL getResourceValue:&fileSizeValue2
+    [[NSURL fileURLWithPath:[_teleport pathForVideo2]] getResourceValue:&fileSizeValue2
                               forKey:NSURLFileSizeKey
                                error:nil];
     if (fileSizeValue2) {
-        NSLog(@"value for %@ is %f", _secondVideoURL, [fileSizeValue2 floatValue]/1024.0f/1024.0f);
+        NSLog(@"value for %@ is %f", [_teleport pathForVideo2], [fileSizeValue2 floatValue]/1024.0f/1024.0f);
     }
     
     // Calculate Viewports
@@ -167,8 +166,8 @@
 {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         [self.navigationController popViewControllerAnimated:NO];
-        [[NSFileManager defaultManager] removeItemAtPath:[_firstVideoURL path] error:nil];
-        [[NSFileManager defaultManager] removeItemAtPath:[_secondVideoURL path] error:nil];
+        [Teleport cleanupCaches:_teleport];
+        _teleport = nil;
     });
 }
 
@@ -195,7 +194,15 @@
 
 -(void)advance
 {
-    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        // Save to DB
+        RLMRealm *realm = [RLMRealm defaultRealm];
+        // Add to Realm with transaction
+        [realm beginWriteTransaction];
+        [realm addObject:_teleport];
+        [realm commitWriteTransaction];
+        [self.navigationController popViewControllerAnimated:NO];
+    });
 }
 
 -(void)addVideosToPlayers
@@ -203,8 +210,8 @@
     // Create a composition to ensure smooth looping
     AVMutableComposition *firstComposition = [AVMutableComposition composition];
     AVMutableComposition *secondComposition = [AVMutableComposition composition];
-    AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
-    AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
+    AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo1]] options:nil];
+    AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo2]] options:nil];
     NSLog(@"1: %f", CMTimeGetSeconds(firstAsset.duration));
     NSLog(@"2: %f", CMTimeGetSeconds(secondAsset.duration));
     
@@ -254,9 +261,13 @@
 
 -(void)didFinishPlaying:(NSNotification *) notification
 {
-    [UIView animateWithDuration:0.2f animations:^{
-        _menuView.alpha = 1.0;
-    }];
+    if (_menuEnabled) {
+        [UIView animateWithDuration:0.2f animations:^{
+            _menuView.alpha = 1.0;
+        }];
+    } else {
+        [self dismissViewControllerAnimated:NO completion:nil];
+    }
 }
 
 -(void)playAt:(CMTime)time player:(AVPlayer*)player {

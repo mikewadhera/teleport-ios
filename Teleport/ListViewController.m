@@ -1,13 +1,17 @@
 
 
 #import "ListViewController.h"
-#import <Realm/Realm.h>
+#import "Teleport.h"
+#import "PreviewViewController.h"
 
 @interface ListViewController ()
 
 @end
 
 @implementation ListViewController
+{
+    RLMResults<Teleport *> *teleports;
+}
 
 - (BOOL)prefersStatusBarHidden {
     return YES;
@@ -16,8 +20,21 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    teleports = [[Teleport allObjects] sortedResultsUsingProperty:@"timestamp" ascending:NO];
+    
     self.view.backgroundColor = [UIColor blackColor];
     self.tableView.backgroundColor = [UIColor blackColor];
+}
+
+-(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+{
+    PreviewViewController *vc = [segue destinationViewController];
+    NSIndexPath *selectedIndexPath = [_tableView indexPathForSelectedRow];
+    [_tableView deselectRowAtIndexPath:selectedIndexPath animated:YES];
+    Teleport *teleport = [teleports objectAtIndex:selectedIndexPath.row];
+    vc.teleport = teleport;
+    
+    [_tableView deselectRowAtIndexPath:selectedIndexPath animated:YES];
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -27,7 +44,7 @@
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 10;
+    return teleports.count;
 }
 
 -(UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -44,7 +61,8 @@
         cell.textLabel.textColor = [UIColor whiteColor];
         cell.textLabel.numberOfLines = 0;
     }
-    NSString *labelText = @"Mike Wadhera\n📍Marina District 🕒 1:56 PM ";
+    Teleport *teleport = [teleports objectAtIndex:indexPath.row];
+    NSString *labelText = [NSString stringWithFormat:@"%@", teleport];
     NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:labelText];
     NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
     [paragraphStyle setLineSpacing:13.5];
@@ -52,6 +70,11 @@
     cell.textLabel.attributedText = attributedString;
     
     return cell;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [self performSegueWithIdentifier:@"Teleport" sender:self];
 }
 
 
