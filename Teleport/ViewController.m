@@ -63,7 +63,7 @@ static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.066))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.5]
 #define                              TPProgressBarTrackHighlightColor   [UIColor redColor]
-static const BOOL                    TPProgressBarTrackShouldHide       = NO;
+static const BOOL                    TPProgressBarTrackShouldHide       = YES;
 #define                              TPProgressBarColor                 [UIColor redColor]
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
@@ -107,8 +107,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) RecordProgressBarView *recordBarView;
 @property (nonatomic, copy) NSURL *firstVideoURL;
 @property (nonatomic, copy) NSURL *secondVideoURL;
-@property (nonatomic, strong) UIImage *firstVideoImage;
-@property (nonatomic, strong) UIImage *secondVideoImage;
 @property (nonatomic) CALayer *firstRecordingVisualCueLayer;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
@@ -217,9 +215,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     // Button
     NSInteger buttonSize = 44;
-    button = [[FRDLivelyButton alloc] initWithFrame:CGRectMake(self.view.bounds.size.width-barWidth-barPadding-buttonSize+10,self.view.bounds.size.height - barWidth - barPadding - buttonSize+10,buttonSize,buttonSize)];
+    button = [[FRDLivelyButton alloc] initWithFrame:CGRectMake(self.view.bounds.size.width-barWidth-barPadding-buttonSize,
+                                                               self.view.bounds.size.height-barWidth-barPadding-buttonSize+8,
+                                                               buttonSize,
+                                                               buttonSize)];
     [button setStyle:kFRDLivelyButtonStyleHamburger animated:NO];
-    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(1.0f),
+    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(2.0f),
                           kFRDLivelyButtonHighlightedColor: [UIColor colorWithWhite:0.8 alpha:1.0],
                           kFRDLivelyButtonColor: [UIColor whiteColor]
                           }];
@@ -351,8 +352,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     PreviewViewController *vc = [segue destinationViewController];
     vc.firstVideoURL = _firstVideoURL;
     vc.secondVideoURL = _secondVideoURL;
-    vc.firstVideoImage = _firstVideoImage;
-    vc.secondVideoImage = _secondVideoImage;
     vc.location = _lastKnownLocation;
     vc.placemarks = _lastKnownPlacemarks;
 }
@@ -616,14 +615,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             assertFrom(TPStateRecordingSecondCompleted);
             AVAssetImageGenerator *imageGenerator;
-            AVURLAsset *firstAsset = [AVURLAsset URLAssetWithURL:_firstVideoURL options:nil];
-            imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:firstAsset];
-            [imageGenerator setAppliesPreferredTrackTransform:YES];
-            _firstVideoImage = [UIImage imageWithCGImage:[imageGenerator copyCGImageAtTime:kCMTimeZero actualTime:nil error:nil]];
-            AVURLAsset *secondAsset = [AVURLAsset URLAssetWithURL:_secondVideoURL options:nil];
-            imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:secondAsset];
-            [imageGenerator setAppliesPreferredTrackTransform:YES];
-            _secondVideoImage = [UIImage imageWithCGImage:[imageGenerator copyCGImageAtTime:kCMTimeZero actualTime:nil error:nil]];
             [self performSegueWithIdentifier:@"ShowPreview" sender:self];
 
         } else if (newStatus == TPStateRecordingCanceling) {

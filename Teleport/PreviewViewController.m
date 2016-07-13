@@ -4,20 +4,20 @@
 @import CoreMedia;
 
 #import "PreviewViewController.h"
+#import "MaterialDesignSymbol.h"
 
 @interface PreviewViewController ()
 
 @property (nonatomic) UIView *playerView;
-@property (nonatomic) UIView *fadeView;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) AVPlayer *secondPlayer;
 @property (nonatomic) AVPlayerLayer *secondPlayerLayer;
 @property (nonatomic) NSURL *videoURL;
+@property (nonatomic) UIVisualEffectView *menuView;
 @property (nonatomic) UIButton *advanceButton;
 @property (nonatomic) UIButton *cancelButton;
-@property (nonatomic, strong) UIImageView *firstImageView;
-@property (nonatomic, strong) UIImageView *secondImageView;
+@property (nonatomic) UIButton *replayButton;
 
 @end
 
@@ -80,45 +80,68 @@
     _secondPlayerLayer.backgroundColor = [UIColor blackColor].CGColor;
     _secondPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
-    _firstImageView = [[UIImageView alloc] initWithImage:_firstVideoImage];
-    _firstImageView.clipsToBounds = YES;
-    _firstImageView.contentMode = UIViewContentModeScaleAspectFill;
-    _firstImageView.frame = topViewportRect;
-    _firstImageView.alpha = 0.10f;
-    _secondImageView = [[UIImageView alloc] initWithImage:_secondVideoImage];
-    _secondImageView.clipsToBounds = YES;
-    _secondImageView.contentMode = UIViewContentModeScaleAspectFill;
-    _secondImageView.frame = bottomViewportRect;
-    _secondImageView.alpha = 0.10f;
-    
     _playerView = [[UIView alloc] initWithFrame:self.view.bounds];
     [_playerView.layer addSublayer:_firstPlayerLayer];
     [_playerView.layer addSublayer:_secondPlayerLayer];
     _playerView.alpha = 0.0f;
     
-    [self.view addSubview:_firstImageView];
-    [self.view addSubview:_secondImageView];
     [self.view addSubview:_playerView];
     
+    // Menu
+    UIVisualEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
+    _menuView = [[UIVisualEffectView alloc] initWithEffect:effect];
+    _menuView.frame = self.view.bounds;
+    _menuView.alpha = 0.0;
+    
     // Buttons
+    NSInteger buttonSize = 65;
+    NSInteger barWidth = 20;
+    NSInteger barPadding = 10;
+    
+    MaterialDesignSymbol *advanceSymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.doneAll48px fontSize:buttonSize];
+    [advanceSymbol addAttribute:NSForegroundColorAttributeName value:[UIColor greenColor]];
+    MaterialDesignSymbol *cancelSymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.delete48px fontSize:buttonSize];
+    [cancelSymbol addAttribute:NSForegroundColorAttributeName value:[UIColor darkGrayColor]];
+    MaterialDesignSymbol *replaySymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.refresh48px fontSize:buttonSize];
+    [replaySymbol addAttribute:NSForegroundColorAttributeName value:[UIColor whiteColor]];
+    
     _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_advanceButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2+55, topViewH-65/2, 65, 65)];
-    [_advanceButton setImage:[UIImage imageNamed:@"green.png"] forState:UIControlStateNormal];
+    [_advanceButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
+                                        _menuView.frame.size.height-barWidth-barPadding-buttonSize,
+                                        buttonSize,
+                                        buttonSize)];
+    [_advanceButton setImage:[advanceSymbol image] forState:UIControlStateNormal];
     [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
     [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
     [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
-    [self.view addSubview:_advanceButton];
+    [_menuView addSubview:_advanceButton];
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    UIImage *cancelImage = [UIImage imageNamed:@"red.png"];
-    [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
-    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width/2-65/2-55, topViewH-65/2, 65, 65)];
+    [_cancelButton setImage:[cancelSymbol image] forState:UIControlStateNormal];
+    [_cancelButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
+                                       _menuView.frame.size.height-barWidth-barPadding-buttonSize-(3.5*buttonSize),
+                                       buttonSize,
+                                       buttonSize)];
     [_cancelButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
     [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(cancel) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
-    [self.view addSubview:_cancelButton];
+    [_menuView addSubview:_cancelButton];
+    
+    _replayButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_replayButton setImage:[replaySymbol image] forState:UIControlStateNormal];
+    [_replayButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
+                                       _menuView.frame.size.height-barWidth-barPadding-buttonSize-(1.5*buttonSize),
+                                       buttonSize,
+                                       buttonSize)];
+    [_replayButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
+    [_replayButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
+    [_replayButton addTarget:self action:@selector(replay) forControlEvents:UIControlEventTouchUpInside];
+    [_replayButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
+    [_menuView addSubview:_replayButton];
+    
+    [self.view addSubview:_menuView];
     
     [self addVideosToPlayers];
     
@@ -146,6 +169,27 @@
         [self.navigationController popViewControllerAnimated:NO];
         [[NSFileManager defaultManager] removeItemAtPath:[_firstVideoURL path] error:nil];
         [[NSFileManager defaultManager] removeItemAtPath:[_secondVideoURL path] error:nil];
+    });
+}
+
+-(void)replay
+{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        // We need to re-create the state of when -viewDidLoad is called
+        UIView *whiteView = [[UIView alloc] initWithFrame:self.view.bounds];
+        whiteView.backgroundColor = [UIColor whiteColor];
+        whiteView.alpha = 0.0;
+        [self.view addSubview:whiteView];
+        [UIView animateWithDuration:0.2f animations:^{
+            whiteView.alpha = 1.0;
+        } completion:^(BOOL finished) {
+            [_firstPlayer seekToTime:kCMTimeZero];
+            [_secondPlayer seekToTime:kCMTimeZero];
+            _menuView.alpha = 0.0;
+            _playerView.alpha = 0.0;
+            [whiteView removeFromSuperview];
+            [self playVideos];
+        }];
     });
 }
 
@@ -198,17 +242,20 @@
 {
     NSTimeInterval duration = 0.2f;
     [UIView animateWithDuration:duration
-                          delay:0.3
+                          delay:0.2f
                         options:UIViewAnimationOptionTransitionCrossDissolve
                      animations:^{
-        _firstImageView.alpha = 1.0;
-        _secondImageView.alpha = 1.0;
-    } completion:^(BOOL finished) {
         _playerView.alpha = 1.0;
-        _firstImageView.alpha = 0.0;
-        _secondImageView.alpha = 0.0;
+    } completion:^(BOOL finished) {
         [self playAt:kCMTimeZero player:_firstPlayer];
         [self playAt:kCMTimeZero player:_secondPlayer];
+    }];
+}
+
+-(void)didFinishPlaying:(NSNotification *) notification
+{
+    [UIView animateWithDuration:0.2f animations:^{
+        _menuView.alpha = 1.0;
     }];
 }
 
@@ -221,19 +268,6 @@
             [self playAt:time player:player];
         });
     }
-}
-
--(void)didFinishPlaying:(NSNotification *) notification
-{
-    NSLog(@"didFinishPlaying");
-    NSTimeInterval duration = 0.2f;
-    [UIView animateWithDuration:duration animations:^{
-        _playerView.alpha = 0.0f;
-    } completion:^(BOOL finished) {
-        [_firstPlayer seekToTime:kCMTimeZero];
-        [_secondPlayer seekToTime:kCMTimeZero];
-        [self performSelector:@selector(playVideos) withObject:nil afterDelay:0];
-    }];
 }
 
 -(void)springOut:(UIButton*)sender
