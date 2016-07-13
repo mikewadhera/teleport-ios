@@ -84,10 +84,12 @@
     _firstImageView.clipsToBounds = YES;
     _firstImageView.contentMode = UIViewContentModeScaleAspectFill;
     _firstImageView.frame = topViewportRect;
+    _firstImageView.alpha = 0.10f;
     _secondImageView = [[UIImageView alloc] initWithImage:_secondVideoImage];
     _secondImageView.clipsToBounds = YES;
     _secondImageView.contentMode = UIViewContentModeScaleAspectFill;
     _secondImageView.frame = bottomViewportRect;
+    _secondImageView.alpha = 0.10f;
     
     _playerView = [[UIView alloc] initWithFrame:self.view.bounds];
     [_playerView.layer addSublayer:_firstPlayerLayer];
@@ -123,9 +125,9 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
--(void)viewWillAppear:(BOOL)animated
+-(void)viewDidAppear:(BOOL)animated
 {
-    [super viewWillAppear:animated];
+    [super viewDidAppear:animated];
     
     [self playVideos];
 }
@@ -194,9 +196,20 @@
 
 -(void)playVideos
 {
-    _playerView.alpha = 1.0;
-    [self playAt:kCMTimeZero player:_firstPlayer];
-    [self playAt:kCMTimeZero player:_secondPlayer];
+    NSTimeInterval duration = 0.2f;
+    [UIView animateWithDuration:duration
+                          delay:0.3
+                        options:UIViewAnimationOptionTransitionCrossDissolve
+                     animations:^{
+        _firstImageView.alpha = 1.0;
+        _secondImageView.alpha = 1.0;
+    } completion:^(BOOL finished) {
+        _playerView.alpha = 1.0;
+        _firstImageView.alpha = 0.0;
+        _secondImageView.alpha = 0.0;
+        [self playAt:kCMTimeZero player:_firstPlayer];
+        [self playAt:kCMTimeZero player:_secondPlayer];
+    }];
 }
 
 -(void)playAt:(CMTime)time player:(AVPlayer*)player {
@@ -213,13 +226,13 @@
 -(void)didFinishPlaying:(NSNotification *) notification
 {
     NSLog(@"didFinishPlaying");
-    NSTimeInterval duration = 0.5f;
+    NSTimeInterval duration = 0.2f;
     [UIView animateWithDuration:duration animations:^{
         _playerView.alpha = 0.0f;
     } completion:^(BOOL finished) {
         [_firstPlayer seekToTime:kCMTimeZero];
         [_secondPlayer seekToTime:kCMTimeZero];
-        [self performSelector:@selector(playVideos) withObject:nil afterDelay:0.1];
+        [self performSelector:@selector(playVideos) withObject:nil afterDelay:0];
     }];
 }
 

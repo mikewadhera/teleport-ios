@@ -38,7 +38,8 @@
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
         cell.textLabel.font = [UIFont systemFontOfSize:13.5];
-        cell.backgroundColor = [UIColor blackColor];
+        cell.backgroundColor = [UIColor colorWithRed:0.15 green:0.17 blue:0.18 alpha:1.0];
+        cell.contentView.backgroundColor = cell.backgroundColor;
         cell.textLabel.textColor = [UIColor whiteColor];
         cell.textLabel.numberOfLines = 0;
     }
