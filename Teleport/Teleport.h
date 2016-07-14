@@ -21,5 +21,6 @@
 -(NSString*)pathForVideo1;
 -(NSString*)pathForVideo2;
 -(NSString*)status;
+-(NSString*)date;
 
 @end

@@ -41,7 +41,6 @@
 {
     PreviewViewController *vc = [segue destinationViewController];
     NSIndexPath *selectedIndexPath = [_tableView indexPathForSelectedRow];
-    [_tableView deselectRowAtIndexPath:selectedIndexPath animated:YES];
     Teleport *teleport = [teleports objectAtIndex:selectedIndexPath.row];
     vc.teleport = teleport;
     
@@ -68,10 +67,7 @@
         cell = [[TeleportTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
     }
     Teleport *teleport = [teleports objectAtIndex:indexPath.row];
-    cell.userLabel.text = @"Me";
-    cell.statusLabel.text = [teleport status];
-    [cell.userLabel sizeToFit];
-    [cell.statusLabel sizeToFit];
+    [cell reload:teleport];
     return cell;
 }
 

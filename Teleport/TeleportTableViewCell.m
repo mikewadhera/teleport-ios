@@ -7,9 +7,18 @@
     [super awakeFromNib];
     
     UIView *bgColorView = [[UIView alloc] init];
-    bgColorView.backgroundColor = [UIColor colorWithRed:0.08 green:0.09 blue:0.11 alpha:1.0];
+    bgColorView.backgroundColor = [UIColor darkGrayColor];
     bgColorView.layer.masksToBounds = YES;
     [self setSelectedBackgroundView:bgColorView];
+}
+
+-(void)reload:(Teleport*)model
+{
+    self.userLabel.text = @"Me";
+    self.statusLabel.text = [model status];
+    self.dateLabel.text = [model date];
+    [self.userLabel sizeToFit];
+    [self.statusLabel sizeToFit];
 }
 
 @end

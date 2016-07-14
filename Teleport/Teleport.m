@@ -75,4 +75,11 @@
             [[[self class] dateFormatter] stringFromDate:self.timestamp]];
 }
 
+-(NSString*)date
+{
+    NSDateFormatter *dateFormatter = [NSDateFormatter new];
+    [dateFormatter setDateFormat:@"M'/'d"];
+    return [dateFormatter stringFromDate:self.timestamp];
+}
+
 @end
