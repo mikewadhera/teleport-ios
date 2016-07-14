@@ -9,7 +9,6 @@
 #import "RecordTimer.h"
 #import "JPSVolumeButtonHandler.h"
 #import "TPUploadSession.h"
-#import "CECrossfadeAnimationController.h"
 #import "Teleport-Swift.h"
 #import "ListViewController.h"
 #import "FRDLivelyButton.h"
@@ -108,7 +107,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
-@property (nonatomic, strong) id animator;
 @property (nonatomic, strong) EasyTransition *transition;
 @property (nonatomic, strong) Teleport *teleport;
 
@@ -135,8 +133,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    self.navigationController.delegate = self;
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -821,21 +817,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         _teleport.location = location;
         [self updateStatusLabel];
     }];
-}
-
-#pragma mark - UINavigationControllerDelegate
-
-- (id<UIViewControllerAnimatedTransitioning>)navigationController:(UINavigationController *)navigationController
-                                  animationControllerForOperation:(UINavigationControllerOperation)operation
-                                               fromViewController:(UIViewController *)fromVC
-                                                 toViewController:(UIViewController *)toVC
-{
-    self.animator = nil;
-    if ([toVC class] == [PreviewViewController class]) {
-        self.animator = [CECrossfadeAnimationController new];
-        [self.animator setReverse:(operation == UINavigationControllerOperationPop)];
-    }
-    return self.animator;
 }
 
 #pragma mark Helpers

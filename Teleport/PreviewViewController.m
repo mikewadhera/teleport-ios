@@ -246,16 +246,17 @@
 
 -(void)playVideos
 {
-    NSTimeInterval duration = 0.5f;
-    [UIView animateWithDuration:duration
-                          delay:0.2f
-                        options:UIViewAnimationOptionTransitionCrossDissolve
-                     animations:^{
-        _playerView.alpha = 1.0;
-    } completion:^(BOOL finished) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self playAt:kCMTimeZero player:_firstPlayer];
         [self playAt:kCMTimeZero player:_secondPlayer];
-    }];
+        NSTimeInterval duration = 0.3f;
+        [UIView animateWithDuration:duration
+                              delay:0.3f
+                            options:UIViewAnimationOptionCurveEaseIn
+                         animations:^{
+                             _playerView.alpha = 1.0;
+                         } completion:nil];
+    });
 }
 
 -(void)didFinishPlaying:(NSNotification *) notification
@@ -265,8 +266,17 @@
             _menuView.alpha = 1.0;
         }];
     } else {
-        //[self.navigationController popViewControllerAnimated:YES];
-        [self dismissViewControllerAnimated:NO completion:nil];
+        NSTimeInterval duration = 0.3f;
+        [UIView animateWithDuration:duration
+                              delay:0.0f
+                            options:UIViewAnimationOptionCurveEaseIn
+                         animations:^{
+                             _playerView.alpha = 0.0;
+                         } completion:^(BOOL finished) {
+                             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                                 [self dismissViewControllerAnimated:NO completion:nil];
+                             });
+                         }];
     }
 }
 
