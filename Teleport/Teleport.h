@@ -20,5 +20,6 @@
 +(void)cleanupCaches:(Teleport*)teleport;
 -(NSString*)pathForVideo1;
 -(NSString*)pathForVideo2;
+-(NSString*)status;
 
 @end

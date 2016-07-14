@@ -22,6 +22,7 @@
 		FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = FB15009F1D2C635100DB2251 /* RecordTimer.m */; };
 		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
 		FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AD1D21FAA8001F1F55 /* red@2x.png */; };
+		FB364ED11D370A6C00B8FF2A /* TeleportTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = FB364ED01D370A6C00B8FF2A /* TeleportTableViewCell.m */; };
 		FB3E06DA1D35C27000A526E0 /* Realm.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB3E06D91D35C27000A526E0 /* Realm.framework */; };
 		FB3E06DB1D35C27000A526E0 /* Realm.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FB3E06D91D35C27000A526E0 /* Realm.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FB3E06DF1D35FB6700A526E0 /* MaterialDesignSymbol.m in Sources */ = {isa = PBXBuildFile; fileRef = FB3E06DE1D35FB6700A526E0 /* MaterialDesignSymbol.m */; };
@@ -108,6 +109,8 @@
 		FB15009F1D2C635100DB2251 /* RecordTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RecordTimer.m; sourceTree = "<group>"; };
 		FB35E0AC1D21FAA8001F1F55 /* green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "green@2x.png"; sourceTree = "<group>"; };
 		FB35E0AD1D21FAA8001F1F55 /* red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "red@2x.png"; sourceTree = "<group>"; };
+		FB364ECF1D370A6C00B8FF2A /* TeleportTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TeleportTableViewCell.h; sourceTree = "<group>"; };
+		FB364ED01D370A6C00B8FF2A /* TeleportTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TeleportTableViewCell.m; sourceTree = "<group>"; };
 		FB3E06D91D35C27000A526E0 /* Realm.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Realm.framework; sourceTree = "<group>"; };
 		FB3E06DD1D35FB6700A526E0 /* MaterialDesignSymbol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MaterialDesignSymbol.h; sourceTree = "<group>"; };
 		FB3E06DE1D35FB6700A526E0 /* MaterialDesignSymbol.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MaterialDesignSymbol.m; sourceTree = "<group>"; };
@@ -271,6 +274,8 @@
 				FBEF04571D305FC5007FFB48 /* TPUploadSession.m */,
 				FB3E06E21D360DE600A526E0 /* Teleport.h */,
 				FB3E06E31D360DE600A526E0 /* Teleport.m */,
+				FB364ECF1D370A6C00B8FF2A /* TeleportTableViewCell.h */,
+				FB364ED01D370A6C00B8FF2A /* TeleportTableViewCell.m */,
 			);
 			path = Teleport;
 			sourceTree = "<group>";
@@ -440,6 +445,7 @@
 				FB499B9D1D3461480015DA2A /* CEFoldAnimationController.m in Sources */,
 				FB499B9F1D3461480015DA2A /* CEPanAnimationController.m in Sources */,
 				FB499B981D3461480015DA2A /* CECardsAnimationController.m in Sources */,
+				FB364ED11D370A6C00B8FF2A /* TeleportTableViewCell.m in Sources */,
 				FB0D9D5A1D0622DA0024CDC4 /* AppDelegate.m in Sources */,
 				FB499B9E1D3461480015DA2A /* CENatGeoAnimationController.m in Sources */,
 				FB499BA21D3461480015DA2A /* CETurnAnimationController.m in Sources */,
@@ -517,7 +523,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -555,7 +561,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;

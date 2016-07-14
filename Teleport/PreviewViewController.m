@@ -197,7 +197,6 @@
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         // Save to DB
         RLMRealm *realm = [RLMRealm defaultRealm];
-        // Add to Realm with transaction
         [realm beginWriteTransaction];
         [realm addObject:_teleport];
         [realm commitWriteTransaction];
@@ -247,7 +246,7 @@
 
 -(void)playVideos
 {
-    NSTimeInterval duration = 0.2f;
+    NSTimeInterval duration = 0.5f;
     [UIView animateWithDuration:duration
                           delay:0.2f
                         options:UIViewAnimationOptionTransitionCrossDissolve
@@ -266,6 +265,7 @@
             _menuView.alpha = 1.0;
         }];
     } else {
+        //[self.navigationController popViewControllerAnimated:YES];
         [self dismissViewControllerAnimated:NO completion:nil];
     }
 }

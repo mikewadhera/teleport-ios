@@ -3,6 +3,7 @@
 #import "ListViewController.h"
 #import "Teleport.h"
 #import "PreviewViewController.h"
+#import "TeleportTableViewCell.h"
 
 @interface ListViewController ()
 
@@ -24,6 +25,9 @@
     
     self.view.backgroundColor = [UIColor blackColor];
     self.tableView.backgroundColor = [UIColor blackColor];
+    self.tableView.cellLayoutMarginsFollowReadableWidth = NO;
+    [self.tableView setLayoutMargins:UIEdgeInsetsZero];
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
 }
 
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
@@ -49,32 +53,19 @@
 
 -(UITableViewCell*)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *CellIdentifier = @"Cell";
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+    static NSString *CellIdentifier = @"TeleportMenuCell";
+    TeleportTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     
     // Configure the cell...
     if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
-        cell.textLabel.font = [UIFont systemFontOfSize:13.5];
-        cell.backgroundColor = [UIColor colorWithRed:0.15 green:0.17 blue:0.18 alpha:1.0];
-        cell.contentView.backgroundColor = cell.backgroundColor;
-        cell.textLabel.textColor = [UIColor whiteColor];
-        cell.textLabel.numberOfLines = 0;
+        cell = [[TeleportTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
     }
     Teleport *teleport = [teleports objectAtIndex:indexPath.row];
-    NSString *labelText = [NSString stringWithFormat:@"%@", teleport];
-    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:labelText];
-    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
-    [paragraphStyle setLineSpacing:13.5];
-    [attributedString addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:NSMakeRange(0, [labelText length])];
-    cell.textLabel.attributedText = attributedString;
-    
+    cell.userLabel.text = @"Me";
+    cell.statusLabel.text = [teleport status];
+    [cell.userLabel sizeToFit];
+    [cell.statusLabel sizeToFit];
     return cell;
-}
-
--(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    [self performSegueWithIdentifier:@"Teleport" sender:self];
 }
 
 

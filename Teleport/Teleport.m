@@ -56,13 +56,6 @@
     return [[NSFileManager defaultManager] fileExistsAtPath:path];
 }
 
--(NSString*)description
-{
-    return [NSString stringWithFormat:@"Me\n📍%@ 🕒 %@ ",
-            self.location,
-            [[[self class] dateFormatter] stringFromDate:self.timestamp]];
-}
-
 -(NSString*)pathForVideo1
 {
     NSString *basename = [NSString stringWithFormat:@"%@-1.mp4", self.id];
@@ -73,6 +66,13 @@
 {
     NSString *basename = [NSString stringWithFormat:@"%@-2.mp4", self.id];
     return [[[self class] baseVideoPath] stringByAppendingPathComponent:basename];
+}
+
+-(NSString*)status
+{
+    return [NSString stringWithFormat:@"📍%@ 🕒 %@ ",
+            self.location,
+            [[[self class] dateFormatter] stringFromDate:self.timestamp]];
 }
 
 @end
