@@ -93,33 +93,25 @@
     _menuView.alpha = 0.0;
     
     // Buttons
-    NSInteger buttonSize = 65;
+    NSInteger buttonSize = 70;
     NSInteger barWidth = 20;
     NSInteger barPadding = 10;
     
-    MaterialDesignSymbol *advanceSymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.doneAll48px fontSize:buttonSize];
-    [advanceSymbol addAttribute:NSForegroundColorAttributeName value:[UIColor greenColor]];
-    MaterialDesignSymbol *cancelSymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.delete48px fontSize:buttonSize];
-    [cancelSymbol addAttribute:NSForegroundColorAttributeName value:[UIColor darkGrayColor]];
+    
     MaterialDesignSymbol *replaySymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.refresh48px fontSize:buttonSize];
     [replaySymbol addAttribute:NSForegroundColorAttributeName value:[UIColor whiteColor]];
     
-    _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_advanceButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
-                                        _menuView.frame.size.height-barWidth-barPadding-buttonSize,
-                                        buttonSize,
-                                        buttonSize)];
-    [_advanceButton setImage:[advanceSymbol image] forState:UIControlStateNormal];
-    [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
-    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
-    [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
-    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
-    [_menuView addSubview:_advanceButton];
+    MaterialDesignSymbol *advanceSymbol = [MaterialDesignSymbol iconWithCode:MaterialDesignIconCode.doneAll48px fontSize:buttonSize];
+    [advanceSymbol addAttribute:NSForegroundColorAttributeName value:[UIColor greenColor]];
+    
+    UIImage *replayImage = [replaySymbol image];
+    UIImage *advanceImage = [advanceSymbol image];
+    UIImage *cancelImage = [self recordBarImage:buttonSize-10];
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_cancelButton setImage:[cancelSymbol image] forState:UIControlStateNormal];
-    [_cancelButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
-                                       _menuView.frame.size.height-barWidth-barPadding-buttonSize-(3.5*buttonSize),
+    [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
+    [_cancelButton setFrame:CGRectMake(barWidth+barPadding,
+                                       _menuView.frame.size.height-barWidth-barPadding-buttonSize+1,
                                        buttonSize,
                                        buttonSize)];
     [_cancelButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
@@ -129,9 +121,9 @@
     [_menuView addSubview:_cancelButton];
     
     _replayButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_replayButton setImage:[replaySymbol image] forState:UIControlStateNormal];
-    [_replayButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
-                                       _menuView.frame.size.height-barWidth-barPadding-buttonSize-(1.5*buttonSize),
+    [_replayButton setImage:replayImage forState:UIControlStateNormal];
+    [_replayButton setFrame:CGRectMake((_menuView.frame.size.width/2.0)-(buttonSize/2.0),
+                                       _menuView.frame.size.height-barWidth-barPadding-buttonSize,
                                        buttonSize,
                                        buttonSize)];
     [_replayButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
@@ -139,6 +131,18 @@
     [_replayButton addTarget:self action:@selector(replay) forControlEvents:UIControlEventTouchUpInside];
     [_replayButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
     [_menuView addSubview:_replayButton];
+    
+    _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_advanceButton setFrame:CGRectMake(_menuView.frame.size.width-barWidth-barPadding-buttonSize,
+                                        _menuView.frame.size.height-barWidth-barPadding-buttonSize,
+                                        buttonSize,
+                                        buttonSize)];
+    [_advanceButton setImage:advanceImage forState:UIControlStateNormal];
+    [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
+    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
+    [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
+    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
+    [_menuView addSubview:_advanceButton];
     
     [self.view addSubview:_menuView];
     
@@ -246,6 +250,9 @@
 
 -(void)playVideos
 {
+    if (_menuEnabled) {
+        if (_menuView.alpha > 0) return;
+    }
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self playAt:kCMTimeZero player:_firstPlayer];
         [self playAt:kCMTimeZero player:_secondPlayer];
@@ -303,6 +310,27 @@
     [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
         sender.layer.transform = CATransform3DMakeScale(1.0, 1.0, 1.0);
     } completion:nil];
+}
+
+-(UIImage*)recordBarImage:(NSInteger)height
+{
+    CGFloat width = ceil(height/(16.0/9.0));
+    UIBezierPath *path = [UIBezierPath bezierPathWithRect:CGRectMake(0, 0, width, height)];
+    CAShapeLayer *layer = [CAShapeLayer layer];
+    layer.path = path.CGPath;
+    layer.frame = CGRectMake(0, 0, width, height);
+    [layer setStrokeColor:[UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1].CGColor];
+    [layer setLineWidth:ceil(0.20*width)];
+    [layer setFillColor:[UIColor clearColor].CGColor];
+    
+    UIGraphicsBeginImageContextWithOptions(layer.frame.size, NO, 0);
+    
+    [layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage *outputImage = UIGraphicsGetImageFromCurrentImageContext();
+    
+    UIGraphicsEndImageContext();
+    
+    return outputImage;
 }
 
 @end
