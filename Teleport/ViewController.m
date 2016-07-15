@@ -61,13 +61,12 @@ static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 static const NSInteger               TPRecordBitrate                    = 7000000;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.07))
-#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.5]
+#define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 static const BOOL                    TPProgressBarTrackShouldHide       = YES;
 #define                              TPProgressBarColor                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
-static const UIRectEdge              TPMenuDirection                    = UIRectEdgeRight;
 // Constants
 
 // For debugging
@@ -711,8 +710,8 @@ static const UIRectEdge              TPMenuDirection                    = UIRect
 //              AVVideoHeightKey : @(960),
 //              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
               AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(TPRecordBitrate),
-                                                       AVVideoExpectedSourceFrameRateKey : @(60),
-                                                       AVVideoMaxKeyFrameIntervalKey : @(60),
+                                                       AVVideoExpectedSourceFrameRateKey : @(30),
+                                                       AVVideoMaxKeyFrameIntervalKey : @(30),
                                                         AVVideoAllowFrameReorderingKey : @YES }
 
             };

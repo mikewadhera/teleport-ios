@@ -493,24 +493,24 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         float maxrate=((AVFrameRateRange*)[vFormat.videoSupportedFrameRateRanges objectAtIndex:0]).maxFrameRate;
         
         // HACK: need a better way to get this format
-        int targetHeight = 1080;
+        int targetHeight = 1936;
         if (position == AVCaptureDevicePositionFront) targetHeight = 960;
         
         // NSLog(@"formats  %@ %@ %@ %@",vFormat.mediaType,vFormat.formatDescription,vFormat.videoSupportedFrameRateRanges, vFormat.videoBinned == YES ? @"Binned" : @"");
         
-        if(maxrate>59 &&
+        if(maxrate>29 &&
            CMVideoFormatDescriptionGetDimensions(description).height == targetHeight &&
            CMFormatDescriptionGetMediaSubType(description)==kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
         {
             if ( YES == [videoDevice lockForConfiguration:NULL] )
             {
                 videoDevice.activeFormat = vFormat;
-                [videoDevice setActiveVideoMinFrameDuration:CMTimeMake(1,position == AVCaptureDevicePositionFront?60:60)];
-                [videoDevice setActiveVideoMaxFrameDuration:CMTimeMake(1,position == AVCaptureDevicePositionFront?60:60)];
+                [videoDevice setActiveVideoMinFrameDuration:CMTimeMake(1,position == AVCaptureDevicePositionFront?30:30)];
+                [videoDevice setActiveVideoMaxFrameDuration:CMTimeMake(1,position == AVCaptureDevicePositionFront?30:30)];
                 if ( videoDevice.hasFlash ) videoDevice.flashMode = AVCaptureFlashModeOff;
                 //if (position == AVCaptureDevicePositionFront) {
                     [videoDevice setAutomaticallyAdjustsVideoHDREnabled:NO];
-                    [videoDevice setVideoHDREnabled:YES];
+                    //[videoDevice setVideoHDREnabled:YES];
                 //}
                 [videoDevice unlockForConfiguration];
                 
