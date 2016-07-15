@@ -149,7 +149,7 @@ extension EasyTransition : UIViewControllerTransitioningDelegate ,UIViewControll
         presentationController.sizeMax = sizeMax
         presentationController.enableDismissTouchOutBound = enableDismissTouchOutBound
         presentationController.zTransitionSize = zTransitionSize
-        presentationController.blurEffectStyle = .Dark
+        presentationController.blurEffectStyle = blurEffectStyle
         return presentationController
     }
     

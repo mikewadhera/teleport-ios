@@ -52,7 +52,7 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 3.5;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.0;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordFirstGraceInterval         = 0.1;
 static const NSTimeInterval          TPRecordFirstGraceOpacity          = 0.9;
@@ -60,13 +60,14 @@ static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 static const NSInteger               TPRecordBitrate                    = 7000000;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
-#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.08))
+#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.07))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.5]
 #define                              TPProgressBarTrackHighlightColor   [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 static const BOOL                    TPProgressBarTrackShouldHide       = YES;
 #define                              TPProgressBarColor                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
+static const UIRectEdge              TPMenuDirection                    = UIRectEdgeRight;
 // Constants
 
 // For debugging
@@ -214,13 +215,12 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                                                                buttonSize,
                                                                buttonSize)];
     [button setStyle:kFRDLivelyButtonStyleHamburger animated:NO];
-    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(2.0f),
+    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(3.0f),
                           kFRDLivelyButtonHighlightedColor: [UIColor colorWithWhite:0.8 alpha:1.0],
-                          kFRDLivelyButtonColor: [UIColor whiteColor]
+                          kFRDLivelyButtonColor: [UIColor darkGrayColor]
                           }];
-    button.alpha = 0.5;
     [button addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
-    [self.navigationController.view.window addSubview:button];
+    [self.view addSubview:button];
 }
 
 -(void)controllerResumedFromBackground
@@ -406,33 +406,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)openMenu
 {
-    [self onMenuOpen];
-    _transition = [[EasyTransition alloc] initWithAttachedViewController:menuController];
-    _transition.delegate = self;
-    _transition.transitionDuration = 0.2;
-    _transition.direction = UIRectEdgeRight;
-    _transition.margins = UIEdgeInsetsMake(0, 100, 0, 0);
-    [self presentViewController:menuController animated:YES completion:nil];
-}
-
--(void)closeMenu
-{
-    [self onMenuClose];
-    [menuController dismissViewControllerAnimated:YES completion:nil];
-}
-
--(void)onMenuOpen
-{
-    [button setStyle:kFRDLivelyButtonStyleClose animated:YES];
-    [button removeTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
-    [button addTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
-}
-
--(void)onMenuClose
-{
-    [button setStyle:kFRDLivelyButtonStyleHamburger animated:YES];
-    [button removeTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
-    [button addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
+    menuController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+    [self presentViewController:menuController animated:NO completion:nil];
 }
 
 // call under @synchonized( self )
@@ -798,7 +773,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)transitionWillDismiss
 {
-    [self onMenuClose];
+    
 }
 
 #pragma mark = CLLocationManager methods

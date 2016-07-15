@@ -4,8 +4,13 @@
 #import "Teleport.h"
 #import "PreviewViewController.h"
 #import "TeleportTableViewCell.h"
+#import "CECrossfadeAnimationController.h"
+#import "TeleportImages.h"
 
-@interface ListViewController ()
+@interface ListViewController () <UINavigationControllerDelegate>
+
+@property (nonatomic, strong) id animator;
+@property (nonatomic) UIButton *cancelButton;
 
 @end
 
@@ -21,20 +26,40 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    teleports = [[Teleport allObjects] sortedResultsUsingProperty:@"timestamp" ascending:NO];
+    self.title = @"Teleports";
+    
+    self.navigationController.delegate = self;
     
     self.view.backgroundColor = [UIColor blackColor];
-    self.tableView.backgroundColor = [UIColor blackColor];
-    self.tableView.cellLayoutMarginsFollowReadableWidth = NO;
-    [self.tableView setLayoutMargins:UIEdgeInsetsZero];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    
+    CGFloat barWidth = floorf((self.view.bounds.size.width*0.07));
+    CGFloat barPadding = 10;
+    CGFloat buttonSize = 48;
+    UIImage *cancelImage = [TeleportImages recordBarImage:buttonSize];
+    
+    _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
+    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width-barWidth-barPadding-buttonSize+5,
+                                       self.view.bounds.size.height-barWidth-barPadding-buttonSize+10,
+                                       buttonSize,
+                                       buttonSize)];
+    [_cancelButton addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:_cancelButton];
+    
+    teleports = [[Teleport allObjects] sortedResultsUsingProperty:@"timestamp" ascending:NO];
 }
 
--(void)viewWillAppear:(BOOL)animated
+-(void)viewDidAppear:(BOOL)animated
 {
-    [super viewWillAppear:animated];
+    [super viewDidAppear:animated];
     
-    [_tableView reloadData];
+    [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:YES];
+}
+
+-(void)dismiss
+{
+    [self dismissViewControllerAnimated:NO completion:nil];
 }
 
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
@@ -43,8 +68,6 @@
     NSIndexPath *selectedIndexPath = [_tableView indexPathForSelectedRow];
     Teleport *teleport = [teleports objectAtIndex:selectedIndexPath.row];
     vc.teleport = teleport;
-    
-    [_tableView deselectRowAtIndexPath:selectedIndexPath animated:YES];
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -69,6 +92,27 @@
     Teleport *teleport = [teleports objectAtIndex:indexPath.row];
     [cell reload:teleport];
     return cell;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [self performSegueWithIdentifier:@"ShowPreview" sender:self];
+}
+
+#pragma mark - UINavigationControllerDelegate
+
+- (id<UIViewControllerAnimatedTransitioning>)navigationController:(UINavigationController *)navigationController
+                                  animationControllerForOperation:(UINavigationControllerOperation)operation
+                                               fromViewController:(UIViewController *)fromVC
+                                                 toViewController:(UIViewController *)toVC
+{
+    self.animator = nil;
+    if ([fromVC class] == [PreviewViewController class] ||
+        [toVC class] == [PreviewViewController class]) {
+        self.animator = [CECrossfadeAnimationController new];
+        [self.animator setReverse:(operation == UINavigationControllerOperationPop)];
+    }
+    return self.animator;
 }
 
 

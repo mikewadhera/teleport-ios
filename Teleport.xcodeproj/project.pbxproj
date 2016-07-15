@@ -19,6 +19,7 @@
 		FB0D9D601D0622DA0024CDC4 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */; };
 		FB0D9D621D0622DA0024CDC4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */; };
 		FB0D9D651D0622DA0024CDC4 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */; };
+		FB13716F1D385EF0002BB86F /* TeleportImages.m in Sources */ = {isa = PBXBuildFile; fileRef = FB13716E1D385EF0002BB86F /* TeleportImages.m */; };
 		FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = FB15009F1D2C635100DB2251 /* RecordTimer.m */; };
 		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
 		FB35E0AF1D21FAA8001F1F55 /* red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AD1D21FAA8001F1F55 /* red@2x.png */; };
@@ -105,6 +106,8 @@
 		FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FB0D9D641D0622DA0024CDC4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FB0D9D661D0622DA0024CDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FB13716D1D385EF0002BB86F /* TeleportImages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TeleportImages.h; sourceTree = "<group>"; };
+		FB13716E1D385EF0002BB86F /* TeleportImages.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TeleportImages.m; sourceTree = "<group>"; };
 		FB15009E1D2C635100DB2251 /* RecordTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RecordTimer.h; sourceTree = "<group>"; };
 		FB15009F1D2C635100DB2251 /* RecordTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RecordTimer.m; sourceTree = "<group>"; };
 		FB35E0AC1D21FAA8001F1F55 /* green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "green@2x.png"; sourceTree = "<group>"; };
@@ -276,6 +279,8 @@
 				FB3E06E31D360DE600A526E0 /* Teleport.m */,
 				FB364ECF1D370A6C00B8FF2A /* TeleportTableViewCell.h */,
 				FB364ED01D370A6C00B8FF2A /* TeleportTableViewCell.m */,
+				FB13716D1D385EF0002BB86F /* TeleportImages.h */,
+				FB13716E1D385EF0002BB86F /* TeleportImages.m */,
 			);
 			path = Teleport;
 			sourceTree = "<group>";
@@ -460,6 +465,7 @@
 				FB499BA11D3461480015DA2A /* CEReversibleAnimationController.m in Sources */,
 				FB499B9C1D3461480015DA2A /* CEFlipAnimationController.m in Sources */,
 				FB0263DD1D34ACBA005B2F67 /* FRDLivelyButton.m in Sources */,
+				FB13716F1D385EF0002BB86F /* TeleportImages.m in Sources */,
 				FB499BA01D3461480015DA2A /* CEPortalAnimationController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -2,6 +2,7 @@
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10117" systemVersion="15E65" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="ESM-wq-tNc">
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
     </dependencies>
     <scenes>
         <!--View Controller-->
@@ -48,7 +49,7 @@
         <!--List View Controller-->
         <scene sceneID="3z2-ls-QxJ">
             <objects>
-                <viewController storyboardIdentifier="menu" id="Reo-gF-him" customClass="ListViewController" sceneMemberID="viewController">
+                <viewController id="Reo-gF-him" customClass="ListViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="a3S-sB-FSY"/>
                         <viewControllerLayoutGuide type="bottom" id="Hh4-Mf-eF6"/>
@@ -57,47 +58,57 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <tableView clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" alwaysBounceVertical="YES" indicatorStyle="black" dataMode="prototypes" style="plain" separatorStyle="default" showsSelectionImmediatelyOnTouchBegin="NO" rowHeight="88" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="fgb-NR-lzK">
-                                <rect key="frame" x="0.0" y="0.0" width="272" height="575"/>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" indicatorStyle="black" dataMode="prototypes" style="plain" separatorStyle="default" showsSelectionImmediatelyOnTouchBegin="NO" rowHeight="88" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="fgb-NR-lzK">
+                                <rect key="frame" x="0.0" y="0.0" width="600" height="505"/>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                                <edgeInsets key="layoutMargins" top="0.0" left="0.0" bottom="0.0" right="0.0"/>
                                 <color key="separatorColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                 <inset key="separatorInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                 <color key="sectionIndexBackgroundColor" red="0.090196078431372548" green="0.10196078431372549" blue="0.10980392156862745" alpha="1" colorSpace="calibratedRGB"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="TeleportMenuCell" id="9kh-Zl-icU" customClass="TeleportTableViewCell">
-                                        <rect key="frame" x="0.0" y="28" width="272" height="88"/>
+                                        <rect key="frame" x="0.0" y="28" width="600" height="88"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="9kh-Zl-icU" id="KiS-d0-ZSI">
-                                            <rect key="frame" x="0.0" y="0.0" width="272" height="87"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="600" height="87"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="88a-i5-9Cu" userLabel="Status">
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="88a-i5-9Cu" userLabel="Status">
                                                     <rect key="frame" x="10" y="48" width="237" height="21"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="13.5"/>
                                                     <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="calibratedRGB"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cho-v8-1e2" userLabel="User">
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cho-v8-1e2" userLabel="User">
                                                     <rect key="frame" x="10" y="14" width="237" height="21"/>
-                                                    <fontDescription key="fontDescription" type="boldSystem" pointSize="14"/>
+                                                    <fontDescription key="fontDescription" type="boldSystem" pointSize="15"/>
                                                     <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="calibratedRGB"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Label" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="x4q-lO-OLh">
-                                                    <rect key="frame" x="205" y="19" width="42" height="21"/>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Label" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="x4q-lO-OLh">
+                                                    <rect key="frame" x="222" y="19" width="42" height="21"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="13"/>
-                                                    <color key="textColor" red="0.80000000000000004" green="0.80000000000000004" blue="0.80000000000000004" alpha="1" colorSpace="calibratedRGB"/>
+                                                    <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
                                             <color key="backgroundColor" red="0.090196078431372548" green="0.10196078431372549" blue="0.10980392156862745" alpha="1" colorSpace="calibratedRGB"/>
+                                            <constraints>
+                                                <constraint firstItem="x4q-lO-OLh" firstAttribute="top" secondItem="KiS-d0-ZSI" secondAttribute="topMargin" constant="10" id="2Pe-9m-FJJ"/>
+                                                <constraint firstItem="cho-v8-1e2" firstAttribute="top" secondItem="KiS-d0-ZSI" secondAttribute="topMargin" constant="10" id="6TZ-7l-dB4"/>
+                                                <constraint firstAttribute="bottomMargin" secondItem="88a-i5-9Cu" secondAttribute="bottom" constant="10" id="NFt-c8-9Y1"/>
+                                                <constraint firstItem="88a-i5-9Cu" firstAttribute="leading" secondItem="KiS-d0-ZSI" secondAttribute="leadingMargin" constant="10" id="WEH-SL-YiC"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="88a-i5-9Cu" secondAttribute="trailing" constant="10" id="atK-Xz-Nn8"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="x4q-lO-OLh" secondAttribute="trailing" constant="10" id="czG-RJ-CUc"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="cho-v8-1e2" secondAttribute="trailing" constant="10" id="xf9-ms-BOr"/>
+                                                <constraint firstItem="cho-v8-1e2" firstAttribute="leading" secondItem="KiS-d0-ZSI" secondAttribute="leadingMargin" constant="10" id="xp3-7W-mQR"/>
+                                            </constraints>
                                         </tableViewCellContentView>
                                         <color key="backgroundColor" red="0.090196078430000007" green="0.1019607843" blue="0.10980392160000001" alpha="1" colorSpace="calibratedRGB"/>
                                         <connections>
                                             <outlet property="dateLabel" destination="x4q-lO-OLh" id="3IF-N7-f7p"/>
                                             <outlet property="statusLabel" destination="88a-i5-9Cu" id="BQB-FV-r73"/>
                                             <outlet property="userLabel" destination="cho-v8-1e2" id="bRi-tK-CHh"/>
-                                            <segue destination="4zT-Yl-Jo9" kind="show" identifier="Teleport" animates="NO" id="fcJ-Do-7y8"/>
                                         </connections>
                                     </tableViewCell>
                                 </prototypes>
@@ -108,14 +119,22 @@
                             </tableView>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstAttribute="trailingMargin" secondItem="fgb-NR-lzK" secondAttribute="trailing" constant="-20" id="7oZ-lw-UFQ"/>
+                            <constraint firstItem="fgb-NR-lzK" firstAttribute="leading" secondItem="1On-Rn-xi4" secondAttribute="leadingMargin" constant="-20" id="k2c-hD-gtA"/>
+                            <constraint firstItem="Hh4-Mf-eF6" firstAttribute="top" secondItem="fgb-NR-lzK" secondAttribute="bottom" constant="95" id="m13-u1-gpL"/>
+                            <constraint firstItem="fgb-NR-lzK" firstAttribute="top" secondItem="1On-Rn-xi4" secondAttribute="topMargin" id="t9d-7J-NDG"/>
+                        </constraints>
                     </view>
+                    <navigationItem key="navigationItem" id="SFP-Ox-eZc"/>
                     <connections>
                         <outlet property="tableView" destination="fgb-NR-lzK" id="mqY-op-Vhr"/>
+                        <segue destination="4zT-Yl-Jo9" kind="show" identifier="ShowPreview" animates="NO" id="zch-nT-jWY"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="s03-z6-0HI" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1069" y="1076"/>
+            <point key="canvasLocation" x="1039" y="1180"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="Xo6-1M-Dvq">
@@ -135,8 +154,30 @@
             </objects>
             <point key="canvasLocation" x="257" y="319"/>
         </scene>
+        <!--Teleport-->
+        <scene sceneID="mfO-Ry-0bR">
+            <objects>
+                <navigationController storyboardIdentifier="menu" title="Teleport" automaticallyAdjustsScrollViewInsets="NO" navigationBarHidden="YES" id="vXr-Fx-bxt" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" translucent="NO" id="fZo-QO-Eo8">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <color key="barTintColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                        <textAttributes key="titleTextAttributes">
+                            <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        </textAttributes>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="Reo-gF-him" kind="relationship" relationship="rootViewController" id="9QG-7y-h3G"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="zwy-td-HzP" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="257" y="1180"/>
+        </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="fcJ-Do-7y8"/>
+        <segue reference="zch-nT-jWY"/>
     </inferredMetricsTieBreakers>
 </document>

@@ -17,8 +17,6 @@
     self.userLabel.text = @"Me";
     self.statusLabel.text = [model status];
     self.dateLabel.text = [model date];
-    [self.userLabel sizeToFit];
-    [self.statusLabel sizeToFit];
 }
 
 @end

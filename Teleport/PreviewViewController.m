@@ -5,6 +5,7 @@
 
 #import "PreviewViewController.h"
 #import "MaterialDesignSymbol.h"
+#import "TeleportImages.h"
 
 @interface PreviewViewController ()
 
@@ -106,7 +107,7 @@
     
     UIImage *replayImage = [replaySymbol image];
     UIImage *advanceImage = [advanceSymbol image];
-    UIImage *cancelImage = [self recordBarImage:buttonSize-10];
+    UIImage *cancelImage = [TeleportImages recordBarImage:buttonSize-10];
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
@@ -281,7 +282,7 @@
                              _playerView.alpha = 0.0;
                          } completion:^(BOOL finished) {
                              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                                 [self dismissViewControllerAnimated:NO completion:nil];
+                                 [self.navigationController popViewControllerAnimated:YES];
                              });
                          }];
     }
@@ -310,27 +311,6 @@
     [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
         sender.layer.transform = CATransform3DMakeScale(1.0, 1.0, 1.0);
     } completion:nil];
-}
-
--(UIImage*)recordBarImage:(NSInteger)height
-{
-    CGFloat width = ceil(height/(16.0/9.0));
-    UIBezierPath *path = [UIBezierPath bezierPathWithRect:CGRectMake(0, 0, width, height)];
-    CAShapeLayer *layer = [CAShapeLayer layer];
-    layer.path = path.CGPath;
-    layer.frame = CGRectMake(0, 0, width, height);
-    [layer setStrokeColor:[UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1].CGColor];
-    [layer setLineWidth:ceil(0.20*width)];
-    [layer setFillColor:[UIColor clearColor].CGColor];
-    
-    UIGraphicsBeginImageContextWithOptions(layer.frame.size, NO, 0);
-    
-    [layer renderInContext:UIGraphicsGetCurrentContext()];
-    UIImage *outputImage = UIGraphicsGetImageFromCurrentImageContext();
-    
-    UIGraphicsEndImageContext();
-    
-    return outputImage;
 }
 
 @end
