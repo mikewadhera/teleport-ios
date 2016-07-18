@@ -48,22 +48,21 @@ typedef NS_ENUM( NSInteger, TPState ) {
 typedef void (^ AssertFromBlock)(TPState);
 
 // Constants
-static const AVCaptureDevicePosition TPViewportTopCamera                = AVCaptureDevicePositionFront;
-static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionBack;
+static const AVCaptureDevicePosition TPViewportTopCamera                = AVCaptureDevicePositionBack;
+static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionFront;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
 static const NSTimeInterval          TPRecordFirstInterval              = 5.0;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
-static const NSTimeInterval          TPRecordFirstGraceInterval         = 0.1;
-static const NSTimeInterval          TPRecordFirstGraceOpacity          = 0.9;
-static const NSTimeInterval          TPRecordSecondGraceInterval        = 0.5;
+static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
-static const NSInteger               TPRecordBitrate                    = 7000000;
+static const NSInteger               TPRecordBitrate                    = 6000000;
+static const NSInteger               TPRecordFramerate                  = 30;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
-#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.07))
+#define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.09))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
 #define                              TPProgressBarTrackHighlightColor   [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
-static const BOOL                    TPProgressBarTrackShouldHide       = YES;
+static const BOOL                    TPProgressBarTrackShouldHide       = NO;
 #define                              TPProgressBarColor                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
@@ -83,7 +82,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic, weak) id<RecordProgressBarViewDelegate> delegate;
 
 -(void)reset;
--(void)prestart;
 -(void)start;
 -(void)resume;
 -(void)cancel;
@@ -103,7 +101,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) RecordProgressBarView *recordBarView;
-@property (nonatomic) CALayer *firstRecordingVisualCueLayer;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
@@ -117,7 +114,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     CGRect topViewportRect;
     CGRect bottomViewportRect;
     BOOL sessionConfigurationFailed;
-    RecordTimer *firstRecordingStartTimer;
     RecordTimer *firstRecordingStopTimer;
     RecordTimer *secondRecordingStartTimer;
     RecordTimer *secondRecordingStopTimer;
@@ -177,9 +173,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
     // Visual Cues
-    _firstRecordingVisualCueLayer = [CALayer layer];
-    _firstRecordingVisualCueLayer.backgroundColor = [UIColor whiteColor].CGColor;
-    _firstRecordingVisualCueLayer.opacity = TPRecordFirstGraceOpacity;
     _secondRecordingVisualCueLayer = [CALayer layer];
     
     // Record Bar
@@ -197,7 +190,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _statusLabel.textColor = [UIColor whiteColor];
     _statusLabel.font = [UIFont systemFontOfSize:13.5];
     
-    [_previewLayer addSublayer:_firstRecordingVisualCueLayer];
     [self.view.layer insertSublayer:_previewLayer atIndex:0];
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
     [self.view.layer insertSublayer:_secondRecordingVisualCueLayer atIndex:2];
@@ -354,10 +346,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [CATransaction setDisableActions:YES];
     [_firstPlayerLayer setFrame:CGRectZero]; // Off-screen
     [_previewLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
-    [_firstRecordingVisualCueLayer setFrame:_previewLayer.bounds];
     [_secondRecordingVisualCueLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
     [_recordBarView reset];
-    [_firstRecordingVisualCueLayer setHidden:NO];
     [_secondRecordingVisualCueLayer removeAllAnimations];
     [_secondRecordingVisualCueLayer setHidden:NO];
     [_secondRecordingVisualCueLayer setOpacity:1.0];
@@ -477,24 +467,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             // Record Timestamp
             _teleport.timestamp = [NSDate date];
             
-            // Prestart progress bar
-            [_recordBarView prestart];
-            
-            // Vibrate
-            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-            
-            // Enter Grace period
-            firstRecordingStartTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordFirstGraceInterval block: ^{
-                // Exit Grace period
-                // Start recording
-                [_sessionCoordinator startRecording];
-            }];
+            // Start recording
+            [_sessionCoordinator startRecording];
             
         } else if (newStatus == TPStateRecordingFirstStarted) {
             
             [button setHidden:YES];
             [_statusLabel setHidden:YES];
-            [_firstRecordingVisualCueLayer setHidden:YES];
             [_recordBarView start];
             [self startSecondRecordingVisualCue];
             firstRecordingStopTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordFirstInterval block:^{
@@ -608,7 +587,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)stopTimers
 {
-    [firstRecordingStartTimer invalidate];
     [firstRecordingStopTimer invalidate];
     [secondRecordingStartTimer invalidate];
     [secondRecordingStopTimer invalidate];
@@ -621,7 +599,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     _secondRecordingVisualCueLayer.backgroundColor = [UIColor whiteColor].CGColor;
     anime.toValue = (id)[UIColor whiteColor].CGColor;
     anime.duration = TPRecordFirstInterval;
-    anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    anime.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
     //anime.autoreverses = YES;
     [_secondRecordingVisualCueLayer addAnimation:anime forKey:@"myColor"];
 }
@@ -710,8 +688,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 //              AVVideoHeightKey : @(960),
 //              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
               AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(TPRecordBitrate),
-                                                       AVVideoExpectedSourceFrameRateKey : @(30),
-                                                       AVVideoMaxKeyFrameIntervalKey : @(30),
+                                                       AVVideoExpectedSourceFrameRateKey : @(TPRecordFramerate),
+                                                       AVVideoMaxKeyFrameIntervalKey : @(TPRecordFramerate),
                                                         AVVideoAllowFrameReorderingKey : @YES }
 
             };
@@ -882,10 +860,10 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         CGPoint pointD = CGPointMake(0, screenSize.height);
         CGPoint pointE = CGPointMake(0, 0);
         [path moveToPoint:pointA];
-        [path addLineToPoint:pointE];
-        [path addLineToPoint:pointD];
-        [path addLineToPoint:pointC];
         [path addLineToPoint:pointB];
+        [path addLineToPoint:pointC];
+        [path addLineToPoint:pointD];
+        [path addLineToPoint:pointE];
         [path addLineToPoint:pointA];
         progressBarLayer.path = path.CGPath;
         progressBarTrackLayer = [CAShapeLayer layer];
@@ -907,6 +885,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [CATransaction setDisableActions:YES];
     [progressBarTrackLayer setHidden:NO];
     [progressBarLayer setHidden:YES];
+    [progressBarLayer setStrokeStart:0.0];
     [progressBarLayer setStrokeEnd:1.0];
     [CATransaction commit];
 }
@@ -924,21 +903,17 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     progressBarLayer.beginTime = 0.0;
     [progressBarLayer addAnimation:animation forKey:nil];
 }
-                                        
--(void)prestart
-{
-    [progressBarLayer setHidden:NO];
-    [progressBarTrackLayer setHidden:TPProgressBarTrackShouldHide];
-}
 
 -(void)start
 {
-    [self animateStrokeFrom:1.0 to:0.5 duration:TPRecordFirstInterval-TPProgressBarEarlyEndInterval];
+    [progressBarLayer setHidden:NO];
+    [progressBarTrackLayer setHidden:TPProgressBarTrackShouldHide];
+    [self animateStrokeFrom:0.0 to:0.5 duration:TPRecordFirstInterval-TPProgressBarEarlyEndInterval];
 }
 
 -(void)resume
 {
-    [self animateStrokeFrom:0.5 to:0.0 duration:TPRecordSecondInterval-TPProgressBarEarlyEndInterval];
+    [self animateStrokeFrom:0.5 to:1.0 duration:TPRecordSecondInterval-TPProgressBarEarlyEndInterval];
 }
 
 -(void)cancel

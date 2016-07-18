@@ -213,6 +213,19 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         NSLog(@"failed to set device position: %ld", (long)self.devicePosition);
     }
     [[self class] configureCamera:videoDevice atPosition:self.devicePosition];
+    
+    // Audio
+    if (_devicePosition == AVCaptureDevicePositionFront) {
+        AVCaptureDevice *audioDevice = [[AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio] firstObject];
+        AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:nil];
+        
+        if ([self.captureSession canAddInput:audioDeviceInput])
+        {
+            [self.captureSession addInput:audioDeviceInput];
+        } else {
+            NSLog(@"failed to set audio input for device position: %ld", (long)self.devicePosition);
+        }
+    }
 }
 
 - (void)addDataOutputsToCaptureSession:(AVCaptureSession *)captureSession
@@ -242,6 +255,22 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
             [_videoConnection setVideoMirrored:YES];
         }
     }
+    
+    // Audio
+    if (_devicePosition == AVCaptureDevicePositionFront) {
+        self.audioDataOutput = [AVCaptureAudioDataOutput new];
+        [_audioDataOutput setSampleBufferDelegate:self queue:_audioDataOutputQueue];
+        if ( [captureSession canAddOutput:_audioDataOutput] ) {
+            [captureSession addOutput:_audioDataOutput];
+        } else {
+            NSLog(@"can't add output: %@", [_audioDataOutput description]);
+            if ( [[self delegate] respondsToSelector:@selector(coordinatorSessionConfigurationDidFail:)] ) {
+                [[self delegate] coordinatorSessionConfigurationDidFail:self];
+            }
+        }
+        _audioConnection = [_audioDataOutput connectionWithMediaType:AVMediaTypeAudio];
+        _captureSession.sessionPreset = AVCaptureSessionPresetHigh; // Required for audio frames when using front HD format
+    };
 }
 
 - (void)setupVideoPipelineWithInputFormatDescription:(CMFormatDescriptionRef)inputFormatDescription
