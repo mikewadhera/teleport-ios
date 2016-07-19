@@ -52,12 +52,12 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionFront;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 5.0;
+static const NSTimeInterval          TPRecordFirstInterval              = 6.0;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
-static const NSInteger               TPRecordBitrate                    = 6000000;
-static const NSInteger               TPRecordFramerate                  = 30;
+static const NSInteger               TPRecordBitrate                    = 7000000;
+static const NSInteger               TPRecordFramerate                  = 60;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.09))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
