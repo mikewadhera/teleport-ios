@@ -18,6 +18,8 @@
 @property (nonatomic) UIButton *advanceButton;
 @property (nonatomic) UIButton *cancelButton;
 @property (nonatomic) UIButton *replayButton;
+@property (nonatomic) UIView *topEyeLensView;
+@property (nonatomic) UIView *bottomEyeLensView;
 
 @end
 
@@ -33,7 +35,7 @@
 -(void)viewDidLoad {
     [super viewDidLoad];
     
-    self.view.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = [UIColor blackColor];
     
     NSNumber *fileSizeValue = nil;
     [[NSURL fileURLWithPath:[_teleport pathForVideo1]] getResourceValue:&fileSizeValue
@@ -83,9 +85,16 @@
     _playerView = [[UIView alloc] initWithFrame:self.view.bounds];
     [_playerView.layer addSublayer:_firstPlayerLayer];
     [_playerView.layer addSublayer:_secondPlayerLayer];
-    _playerView.alpha = 0.0f;
+    
+    _topEyeLensView = [[UIView alloc] initWithFrame:topViewportRect];
+    _topEyeLensView.backgroundColor = [UIColor blackColor];
+    
+    _bottomEyeLensView = [[UIView alloc] initWithFrame:bottomViewportRect];
+    _bottomEyeLensView.backgroundColor = [UIColor blackColor];
     
     [self.view addSubview:_playerView];
+    [self.view addSubview:_topEyeLensView];
+    [self.view addSubview:_bottomEyeLensView];
     
     // Menu
     UIVisualEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
@@ -147,7 +156,7 @@
     
     [self.view addSubview:_menuView];
     
-    [self addVideosToPlayers];
+    [self setup];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
@@ -180,18 +189,12 @@
 {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         // We need to re-create the state of when -viewDidLoad is called
-        UIView *whiteView = [[UIView alloc] initWithFrame:self.view.bounds];
-        whiteView.backgroundColor = [UIColor whiteColor];
-        whiteView.alpha = 0.0;
-        [self.view addSubview:whiteView];
+        [_topEyeLensView setFrame:_firstPlayerLayer.frame];
+        [_bottomEyeLensView setFrame:_secondPlayerLayer.frame];
+        _playerView.alpha = 1.0;
         [UIView animateWithDuration:0.2f animations:^{
-            whiteView.alpha = 1.0;
+            _menuView.alpha = 0.0f;
         } completion:^(BOOL finished) {
-            [_firstPlayer seekToTime:kCMTimeZero];
-            [_secondPlayer seekToTime:kCMTimeZero];
-            _menuView.alpha = 0.0;
-            _playerView.alpha = 0.0;
-            [whiteView removeFromSuperview];
             [self playVideos];
         }];
     });
@@ -209,15 +212,28 @@
     });
 }
 
--(void)addVideosToPlayers
+-(void)startAnimation
 {
-    // Create a composition to ensure smooth looping
-    AVMutableComposition *firstComposition = [AVMutableComposition composition];
-    AVMutableComposition *secondComposition = [AVMutableComposition composition];
+    double animationDuation = 0.25;
+    
+    [UIView animateWithDuration:animationDuation delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+        [_topEyeLensView setFrame:CGRectMake(_topEyeLensView.frame.origin.x, -_topEyeLensView.frame.size.height, _topEyeLensView.frame.size.width, _topEyeLensView.frame.size.height)];
+        
+        [_bottomEyeLensView setFrame:CGRectMake(_bottomEyeLensView.frame.origin.x, _bottomEyeLensView.frame.origin.y+_bottomEyeLensView.frame.size.height, _bottomEyeLensView.frame.size.width, _bottomEyeLensView.frame.size.height)];
+    } completion:nil];
+}
+
+-(void)setup
+{
+    
     AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo1]] options:nil];
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo2]] options:nil];
     NSLog(@"1: %f", CMTimeGetSeconds(firstAsset.duration));
     NSLog(@"2: %f", CMTimeGetSeconds(secondAsset.duration));
+    
+    // Create a composition
+    AVMutableComposition *firstComposition = [AVMutableComposition composition];
+    AVMutableComposition *secondComposition = [AVMutableComposition composition];
     
     // NOTE: We clip the to length of shorter duration
     AVAsset *shorterAsset = CMTimeGetSeconds(firstAsset.duration) > CMTimeGetSeconds(secondAsset.duration) ? secondAsset : firstAsset;
@@ -257,35 +273,27 @@
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self playAt:kCMTimeZero player:_firstPlayer];
         [self playAt:kCMTimeZero player:_secondPlayer];
-        NSTimeInterval duration = 0.3f;
-        [UIView animateWithDuration:duration
-                              delay:0.3f
-                            options:UIViewAnimationOptionCurveEaseIn
-                         animations:^{
-                             _playerView.alpha = 1.0;
-                         } completion:nil];
+        [self startAnimation];
     });
 }
 
 -(void)didFinishPlaying:(NSNotification *) notification
 {
-    if (_menuEnabled) {
-        [UIView animateWithDuration:0.2f animations:^{
-            _menuView.alpha = 1.0;
-        }];
-    } else {
-        NSTimeInterval duration = 0.3f;
-        [UIView animateWithDuration:duration
-                              delay:0.0f
-                            options:UIViewAnimationOptionCurveEaseIn
-                         animations:^{
-                             _playerView.alpha = 0.0;
-                         } completion:^(BOOL finished) {
-                             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                                 [self.navigationController popViewControllerAnimated:YES];
-                             });
-                         }];
-    }
+    NSTimeInterval duration = 0.2f;
+    [UIView animateWithDuration:duration
+                          delay:0.0f
+                        options:UIViewAnimationOptionCurveEaseIn
+                     animations:^{
+                         _playerView.alpha = 0.0;
+                     } completion:^(BOOL finished) {
+                         if (_menuEnabled) {
+                             [UIView animateWithDuration:0.2f animations:^{
+                                 _menuView.alpha = 1.0;
+                             }];
+                         } else {
+                             [self.navigationController popViewControllerAnimated:YES];
+                         }
+                     }];
 }
 
 -(void)playAt:(CMTime)time player:(AVPlayer*)player {

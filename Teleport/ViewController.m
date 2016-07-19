@@ -198,6 +198,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     // Menu
     menuController = [self.storyboard instantiateViewControllerWithIdentifier:@"menu"];
+    menuController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
     
     // Button
     NSInteger buttonSize = 44;
@@ -395,7 +396,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)openMenu
 {
-    menuController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
     [self presentViewController:menuController animated:NO completion:nil];
 }
 

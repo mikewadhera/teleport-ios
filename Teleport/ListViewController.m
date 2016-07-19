@@ -54,7 +54,11 @@
 {
     [super viewDidAppear:animated];
     
-    [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:YES];
+    if (_tableView.indexPathForSelectedRow) {
+        [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:YES];
+    } else {
+        [_tableView reloadData];
+    }
 }
 
 -(void)dismiss
