@@ -12,6 +12,7 @@
 #import "ListViewController.h"
 #import "FRDLivelyButton.h"
 #import "Teleport.h"
+#import "CECrossfadeAnimationController.h"
 
 typedef NS_ENUM( NSInteger, TPCameraSetupResult ) {
     TPCameraSetupResultSuccess,
@@ -65,6 +66,8 @@ static const BOOL                    TPProgressBarTrackShouldHide       = NO;
 #define                              TPProgressBarColor                 [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:1]
 #define                              TPLocationAccuracy                 kCLLocationAccuracyBestForNavigation
 static const CLLocationDistance      TPLocationDistanceFilter           = 100;
+static const NSInteger               TPMenuLeftMargin                   = 60;
+static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
 // Constants
 
 // For debugging
@@ -104,6 +107,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) Teleport *teleport;
+@property (nonatomic, strong) id animator;
 
 @end
 
@@ -118,8 +122,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     JPSVolumeButtonHandler *volumeHandler;
     NSTimer *statusLabelTimer;
     FRDLivelyButton *button;
-    UINavigationController *menuNavController;
     ListViewController *menuController;
+    UIVisualEffectView *blurView;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -128,6 +132,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.navigationController.delegate = self;
     
     self.view.backgroundColor = [UIColor blackColor];
     
@@ -180,7 +186,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     // Status Label
     CGFloat barWidth = [_recordBarView barWidth];
-    CGFloat barPadding = 10;
+    CGFloat barPadding = 5;
     CGFloat labelHeight = 30;
     _statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(barWidth+barPadding,
                                                              self.view.bounds.size.height - barWidth - barPadding - labelHeight,
@@ -197,10 +203,13 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [self.view addSubview:_statusLabel];
     
     // Menu
-    menuNavController = [self.storyboard instantiateViewControllerWithIdentifier:@"menu"];
-    menuNavController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    menuNavController.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-    menuController = [[menuNavController viewControllers] firstObject];
+    menuController = [self.storyboard instantiateViewControllerWithIdentifier:@"menuVC"];
+    [self addChildViewController:menuController];
+    [menuController.view setFrame:CGRectMake(self.view.bounds.size.width,
+                                             0,
+                                             menuController.view.frame.size.width-TPMenuLeftMargin,
+                                             menuController.view.frame.size.height)];
+    [self.view addSubview:menuController.view];
     
     // Button
     NSInteger buttonSize = 44;
@@ -349,9 +358,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     vc.teleport = _teleport;
     vc.menuEnabled = YES;
     vc.onAdvanceHandler = ^{
-        [self openMenuAnimated:NO completion:^{
-            [menuController.tableView reloadData];
-        }];
+        [self openMenuAnimated:NO completion:nil];
     };
 }
 
@@ -416,13 +423,45 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)openMenuAnimated:(BOOL)animated completion:(dispatch_block_t)completion
 {
-    // Manually add/remove volume handler since we don't tear down session
+    // Manually remove volume handler since we don't tear down session
     [self removeVolumeHandler];
-    __block typeof(self) weakSelf = self;
-    menuController.onDismissHandler = ^{
-        [weakSelf addVolumeHandler];
-    };
-    [self presentViewController:menuNavController animated:animated completion:completion];
+    // Set button target to closeMenu
+    [button setStyle:kFRDLivelyButtonStyleClose animated:YES];
+    [button removeTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
+    [button addTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
+    // Add Blur
+    blurView = [[UIVisualEffectView alloc] initWithFrame:self.view.bounds];
+    [self.view insertSubview:blurView belowSubview:menuController.view];
+    // Animate from right and blur in
+    [UIView animateWithDuration:(animated?TPMenuAnimateInterval:0.0) delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
+        blurView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
+        [menuController.view setFrame:CGRectMake(TPMenuLeftMargin,
+                                                 0,
+                                                 menuController.view.frame.size.width,
+                                                 menuController.view.frame.size.height)];
+    } completion:^(BOOL finished) {
+        
+    }];
+}
+
+-(void)closeMenu
+{
+    [self addVolumeHandler];
+    // Set button target to openMenu
+    [button setStyle:kFRDLivelyButtonStyleHamburger animated:YES];
+    [button removeTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
+    [button addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
+    // Animate to right and remove blur
+    [UIView animateWithDuration:TPMenuAnimateInterval delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
+        blurView.effect = nil;
+        [menuController.view setFrame:CGRectMake(self.view.bounds.size.width,
+                                                 0,
+                                                 menuController.view.frame.size.width,
+                                                 menuController.view.frame.size.height)];
+    } completion:^(BOOL finished) {
+        [blurView removeFromSuperview];
+        blurView = nil;
+    }];
 }
 
 // call under @synchonized( self )
@@ -671,6 +710,22 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                                                 repeats:YES];
     
     [[NSRunLoop mainRunLoop] addTimer:statusLabelTimer forMode:NSDefaultRunLoopMode];
+}
+
+#pragma mark - UINavigationControllerDelegate
+
+- (id<UIViewControllerAnimatedTransitioning>)navigationController:(UINavigationController *)navigationController
+                                  animationControllerForOperation:(UINavigationControllerOperation)operation
+                                               fromViewController:(UIViewController *)fromVC
+                                                 toViewController:(UIViewController *)toVC
+{
+    self.animator = nil;
+    if ([fromVC class] == [PreviewViewController class] ||
+        [toVC class] == [PreviewViewController class]) {
+        self.animator = [CECrossfadeAnimationController new];
+        [self.animator setReverse:(operation == UINavigationControllerOperationPop)];
+    }
+    return self.animator;
 }
 
 #pragma mark = RecordProgressBarViewDelegate methods

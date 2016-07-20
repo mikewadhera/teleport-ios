@@ -30,7 +30,7 @@
         <!--Preview View Controller-->
         <scene sceneID="onM-hl-u8e">
             <objects>
-                <viewController id="4zT-Yl-Jo9" customClass="PreviewViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="preview" id="4zT-Yl-Jo9" customClass="PreviewViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="F94-QA-60z"/>
                         <viewControllerLayoutGuide type="bottom" id="2XQ-7R-7QP"/>
@@ -49,7 +49,7 @@
         <!--List View Controller-->
         <scene sceneID="3z2-ls-QxJ">
             <objects>
-                <viewController id="Reo-gF-him" customClass="ListViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="menuVC" id="Reo-gF-him" customClass="ListViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="a3S-sB-FSY"/>
                         <viewControllerLayoutGuide type="bottom" id="Hh4-Mf-eF6"/>
@@ -58,8 +58,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" indicatorStyle="black" dataMode="prototypes" style="plain" separatorStyle="default" showsSelectionImmediatelyOnTouchBegin="NO" rowHeight="88" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="fgb-NR-lzK">
-                                <rect key="frame" x="0.0" y="0.0" width="600" height="505"/>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" indicatorStyle="white" dataMode="prototypes" style="plain" separatorStyle="default" showsSelectionImmediatelyOnTouchBegin="NO" rowHeight="88" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="fgb-NR-lzK">
+                                <rect key="frame" x="20" y="0.0" width="575" height="505"/>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                                 <edgeInsets key="layoutMargins" top="0.0" left="0.0" bottom="0.0" right="0.0"/>
                                 <color key="separatorColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
@@ -67,10 +67,10 @@
                                 <color key="sectionIndexBackgroundColor" red="0.090196078431372548" green="0.10196078431372549" blue="0.10980392156862745" alpha="1" colorSpace="calibratedRGB"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="TeleportMenuCell" id="9kh-Zl-icU" customClass="TeleportTableViewCell">
-                                        <rect key="frame" x="0.0" y="28" width="600" height="88"/>
+                                        <rect key="frame" x="0.0" y="28" width="575" height="88"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="9kh-Zl-icU" id="KiS-d0-ZSI">
-                                            <rect key="frame" x="0.0" y="0.0" width="600" height="87"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="575" height="87"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="88a-i5-9Cu" userLabel="Status">
@@ -120,8 +120,8 @@
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
-                            <constraint firstAttribute="trailingMargin" secondItem="fgb-NR-lzK" secondAttribute="trailing" constant="-20" id="7oZ-lw-UFQ"/>
-                            <constraint firstItem="fgb-NR-lzK" firstAttribute="leading" secondItem="1On-Rn-xi4" secondAttribute="leadingMargin" constant="-20" id="k2c-hD-gtA"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="fgb-NR-lzK" secondAttribute="trailing" constant="-15" id="7oZ-lw-UFQ"/>
+                            <constraint firstItem="fgb-NR-lzK" firstAttribute="leading" secondItem="1On-Rn-xi4" secondAttribute="leadingMargin" id="k2c-hD-gtA"/>
                             <constraint firstItem="Hh4-Mf-eF6" firstAttribute="top" secondItem="fgb-NR-lzK" secondAttribute="bottom" constant="95" id="m13-u1-gpL"/>
                             <constraint firstItem="fgb-NR-lzK" firstAttribute="top" secondItem="1On-Rn-xi4" secondAttribute="topMargin" id="t9d-7J-NDG"/>
                         </constraints>
@@ -154,30 +154,8 @@
             </objects>
             <point key="canvasLocation" x="257" y="319"/>
         </scene>
-        <!--Teleport-->
-        <scene sceneID="mfO-Ry-0bR">
-            <objects>
-                <navigationController storyboardIdentifier="menu" title="Teleport" automaticallyAdjustsScrollViewInsets="NO" navigationBarHidden="YES" id="vXr-Fx-bxt" sceneMemberID="viewController">
-                    <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" translucent="NO" id="fZo-QO-Eo8">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                        <color key="barTintColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
-                        <textAttributes key="titleTextAttributes">
-                            <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                        </textAttributes>
-                    </navigationBar>
-                    <nil name="viewControllers"/>
-                    <connections>
-                        <segue destination="Reo-gF-him" kind="relationship" relationship="rootViewController" id="9QG-7y-h3G"/>
-                    </connections>
-                </navigationController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="zwy-td-HzP" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="257" y="1180"/>
-        </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="zch-nT-jWY"/>
+        <segue reference="ooX-ZJ-WQ7"/>
     </inferredMetricsTieBreakers>
 </document>

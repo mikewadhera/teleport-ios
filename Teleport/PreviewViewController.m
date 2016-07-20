@@ -232,13 +232,13 @@
     [realm beginWriteTransaction];
     [realm addObject:_teleport];
     [realm commitWriteTransaction];
+    if (self.onAdvanceHandler) self.onAdvanceHandler();    
     [self.navigationController popViewControllerAnimated:NO];
-    if (self.onAdvanceHandler) self.onAdvanceHandler();
 }
 
 -(void)startAnimation
 {
-    double animationDuation = 0.25;
+    double animationDuation = 0.3;
     
     [UIView animateWithDuration:animationDuation delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
         [_topEyeLensView setFrame:CGRectMake(_topEyeLensView.frame.origin.x, -_topEyeLensView.frame.size.height, _topEyeLensView.frame.size.width, _topEyeLensView.frame.size.height)];
@@ -249,7 +249,7 @@
 
 -(void)stopAnimation:(dispatch_block_t)completion
 {
-    NSTimeInterval duration = 0.25f;
+    NSTimeInterval duration = 0.3f;
     [UIView animateWithDuration:duration
                           delay:0.0f
                         options:UIViewAnimationOptionCurveEaseOut
