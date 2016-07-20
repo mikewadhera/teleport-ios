@@ -6,4 +6,7 @@
 
 @property (nonatomic, strong) IBOutlet UITableView *tableView;
 
+-(void)reload;
+-(void)selectFirst;
+
 @end

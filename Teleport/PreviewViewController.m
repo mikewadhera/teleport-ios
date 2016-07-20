@@ -233,7 +233,7 @@
     [realm addObject:_teleport];
     [realm commitWriteTransaction];
     if (self.onAdvanceHandler) self.onAdvanceHandler();    
-    [self.navigationController popViewControllerAnimated:NO];
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 -(void)startAnimation

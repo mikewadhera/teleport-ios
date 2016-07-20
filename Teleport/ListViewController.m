@@ -36,9 +36,19 @@
     
     if (_tableView.indexPathForSelectedRow) {
         [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:YES];
-    } else {
-        [_tableView reloadData];
     }
+}
+
+-(void)reload
+{
+    [_tableView reloadData];
+}
+
+-(void)selectFirst
+{
+    [_tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]
+                            animated:NO
+                      scrollPosition:UITableViewScrollPositionTop];
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView

@@ -57,7 +57,7 @@ static const NSTimeInterval          TPRecordSecondInterval             = TPReco
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
 static const NSInteger               TPRecordBitrate                    = 7000000;
-static const NSInteger               TPRecordFramerate                  = 60;
+static const NSInteger               TPRecordFramerate                  = 30;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.09))
 #define                              TPProgressBarTrackColor            [UIColor colorWithRed:1.0 green:0.13 blue:0.13 alpha:0.33]
@@ -358,6 +358,11 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     vc.teleport = _teleport;
     vc.menuEnabled = YES;
     vc.onAdvanceHandler = ^{
+        // Reload menu
+        [menuController reload];
+        // Set new teleport to selected
+        [menuController selectFirst];
+        // Keep Menu open
         [self openMenuAnimated:NO completion:nil];
     };
 }
@@ -440,7 +445,7 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
                                                  menuController.view.frame.size.width,
                                                  menuController.view.frame.size.height)];
     } completion:^(BOOL finished) {
-        
+        if (completion) completion();
     }];
 }
 
