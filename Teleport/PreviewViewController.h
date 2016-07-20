@@ -6,5 +6,6 @@
 
 @property (nonatomic, strong) Teleport *teleport;
 @property (nonatomic) BOOL menuEnabled;
+@property (nonatomic) dispatch_block_t onAdvanceHandler;
 
 @end

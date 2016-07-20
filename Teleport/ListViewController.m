@@ -40,7 +40,7 @@
     
     _cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
-    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width-barWidth-barPadding-buttonSize+5,
+    [_cancelButton setFrame:CGRectMake(self.view.bounds.size.width-barWidth-barPadding-buttonSize-5,
                                        self.view.bounds.size.height-barWidth-barPadding-buttonSize+10,
                                        buttonSize,
                                        buttonSize)];
@@ -56,14 +56,12 @@
     
     if (_tableView.indexPathForSelectedRow) {
         [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:YES];
-    } else {
-        [_tableView reloadData];
     }
 }
 
 -(void)dismiss
 {
-    [self dismissViewControllerAnimated:NO completion:nil];
+    [self dismissViewControllerAnimated:YES completion:_onDismissHandler];
 }
 
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender

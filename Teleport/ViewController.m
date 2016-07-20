@@ -52,11 +52,11 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionFront;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 6.0;
+static const NSTimeInterval          TPRecordFirstInterval              = 5.0;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
-static const NSInteger               TPRecordBitrate                    = 7000000;
+static const NSInteger               TPRecordBitrate                    = 6000000;
 static const NSInteger               TPRecordFramerate                  = 60;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.09))
@@ -120,6 +120,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     JPSVolumeButtonHandler *volumeHandler;
     NSTimer *statusLabelTimer;
     FRDLivelyButton *button;
+    UINavigationController *menuNavController;
     ListViewController *menuController;
 }
 
@@ -197,8 +198,10 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     [self.view addSubview:_statusLabel];
     
     // Menu
-    menuController = [self.storyboard instantiateViewControllerWithIdentifier:@"menu"];
-    menuController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+    menuNavController = [self.storyboard instantiateViewControllerWithIdentifier:@"menu"];
+    menuNavController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+    menuNavController.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+    menuController = [[menuNavController viewControllers] firstObject];
     
     // Button
     NSInteger buttonSize = 44;
@@ -248,12 +251,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     {
         case TPCameraSetupResultSuccess:
         {
-            // Volume Handler
-            volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
-                [self toggleRecording];
-            } downBlock:^{
-                [self toggleRecording];
-            }];
             @synchronized (self) {
                 [self transitionToStatus:TPStateSessionStarting];
             }
@@ -288,7 +285,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     
     if ( _setupResult == TPCameraSetupResultSuccess ) {
         @synchronized (self) {
-            volumeHandler = nil;
             [self transitionToStatus:TPStateSessionStopping];
         }
     }
@@ -333,11 +329,31 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     }
 }
 
+-(void)addVolumeHandler
+{
+    volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
+        [self toggleRecording];
+    } downBlock:^{
+        [self toggleRecording];
+    }];
+}
+
+
+-(void)removeVolumeHandler
+{
+    volumeHandler = nil;
+}
+
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     PreviewViewController *vc = [segue destinationViewController];
     vc.teleport = _teleport;
     vc.menuEnabled = YES;
+    vc.onAdvanceHandler = ^{
+        [self openMenuAnimated:NO completion:^{
+            [menuController.tableView reloadData];
+        }];
+    };
 }
 
 -(void)reset
@@ -396,7 +412,18 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 -(void)openMenu
 {
-    [self presentViewController:menuController animated:NO completion:nil];
+    [self openMenuAnimated:YES completion:nil];
+}
+
+-(void)openMenuAnimated:(BOOL)animated completion:(dispatch_block_t)completion
+{
+    // Manually add/remove volume handler since we don't tear down session
+    [self removeVolumeHandler];
+    __block typeof(self) weakSelf = self;
+    menuController.onDismissHandler = ^{
+        [weakSelf addVolumeHandler];
+    };
+    [self presentViewController:menuNavController animated:animated completion:completion];
 }
 
 // call under @synchonized( self )
@@ -432,8 +459,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             // Start polling
             [_locationManager startUpdatingLocation];
             
-            // Disable recording
-            [_recordBarView setUserInteractionEnabled:NO];
+            // Add volume handler
+            [self addVolumeHandler];
             
             // Start session
             [_sessionCoordinator startRunning];
@@ -445,6 +472,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
             
             // Stop polling
             [_locationManager stopUpdatingLocation];
+            
+            // Remove volume handler
+            [self removeVolumeHandler];
             
             // Stop session
             [_sessionCoordinator stopRunning];

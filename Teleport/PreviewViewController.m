@@ -14,7 +14,7 @@
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
 @property (nonatomic) AVPlayer *secondPlayer;
 @property (nonatomic) AVPlayerLayer *secondPlayerLayer;
-@property (nonatomic) UIVisualEffectView *menuView;
+@property (nonatomic) UIView *menuView;
 @property (nonatomic) UIButton *advanceButton;
 @property (nonatomic) UIButton *cancelButton;
 @property (nonatomic) UIButton *replayButton;
@@ -26,6 +26,8 @@
 @implementation PreviewViewController
 {
     CMClockRef syncClock;
+    CGRect topViewportRect;
+    CGRect bottomViewportRect;
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -57,13 +59,13 @@
     int topViewH = ceil(self.view.frame.size.height / 2.0);
     int topViewX = 0;
     int topViewY = 0;
-    CGRect topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
+    topViewportRect = CGRectMake(topViewX, topViewY, topViewW, topViewH);
     
     int bottomViewW = self.view.frame.size.width;
     int bottomViewH = ceil(self.view.frame.size.height / 2.0);
     int bottomViewX = 0;
     int bottomViewY = floor(self.view.frame.size.height / 2.0);
-    CGRect bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
+    bottomViewportRect = CGRectMake(bottomViewX, bottomViewY, bottomViewW, bottomViewH);
     
     // Player
     CMAudioClockCreate(kCFAllocatorDefault, &syncClock);
@@ -97,9 +99,7 @@
     [self.view addSubview:_bottomEyeLensView];
     
     // Menu
-    UIVisualEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
-    _menuView = [[UIVisualEffectView alloc] initWithEffect:effect];
-    _menuView.frame = self.view.bounds;
+    _menuView = [[UIView alloc] initWithFrame:self.view.bounds];
     _menuView.alpha = 0.0;
     
     // Buttons
@@ -124,10 +124,7 @@
                                        _menuView.frame.size.height-barWidth-barPadding-buttonSize+1,
                                        buttonSize,
                                        buttonSize)];
-    [_cancelButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
-    [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_cancelButton addTarget:self action:@selector(cancel) forControlEvents:UIControlEventTouchUpInside];
-    [_cancelButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
     [_menuView addSubview:_cancelButton];
     
     _replayButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -136,10 +133,7 @@
                                        _menuView.frame.size.height-barWidth-barPadding-buttonSize,
                                        buttonSize,
                                        buttonSize)];
-    [_replayButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
-    [_replayButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_replayButton addTarget:self action:@selector(replay) forControlEvents:UIControlEventTouchUpInside];
-    [_replayButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
     [_menuView addSubview:_replayButton];
     
     _advanceButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -148,17 +142,15 @@
                                         buttonSize,
                                         buttonSize)];
     [_advanceButton setImage:advanceImage forState:UIControlStateNormal];
-    [_advanceButton addTarget:self action:@selector(springOut:) forControlEvents:UIControlEventTouchDown];
-    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchUpInside];
     [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
-    [_advanceButton addTarget:self action:@selector(restore:) forControlEvents:UIControlEventTouchDragExit];
     [_menuView addSubview:_advanceButton];
     
     [self.view addSubview:_menuView];
     
     [self setup];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playVideos) name:UIApplicationWillEnterForegroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(controllerWillForeground) name:UIApplicationWillEnterForegroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(controllerWillBackground) name:UIApplicationWillResignActiveNotification object:nil];
 }
 
 -(void)viewDidAppear:(BOOL)animated
@@ -173,43 +165,75 @@
     [super viewWillDisappear:animated];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
 }
 
+-(void)controllerWillBackground
+{
+    [self stopAnimation:nil];
+}
+
+-(void)controllerWillForeground
+{
+    [self playVideos];
+}
+
+-(void)playVideos
+{
+    if (_menuEnabled) {
+        if (_menuView.alpha > 0) return;
+    }
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self playAt:kCMTimeZero player:_firstPlayer];
+        [self playAt:kCMTimeZero player:_secondPlayer];
+        [self startAnimation];
+    });
+}
+
+-(void)didFinishPlaying:(NSNotification *) notification
+{
+    [self stopAnimation:^{
+        if (_menuEnabled) {
+            [UIView animateWithDuration:0.2f animations:^{
+                _menuView.alpha = 1.0;
+            }];
+        } else {
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    }];
+}
+
+
 -(void)cancel
 {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-        [self.navigationController popViewControllerAnimated:NO];
-        [Teleport cleanupCaches:_teleport];
-        _teleport = nil;
-    });
+    [self.navigationController popViewControllerAnimated:NO];
+    [Teleport cleanupCaches:_teleport];
+    _teleport = nil;
 }
 
 -(void)replay
 {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-        // We need to re-create the state of when -viewDidLoad is called
-        [_topEyeLensView setFrame:_firstPlayerLayer.frame];
-        [_bottomEyeLensView setFrame:_secondPlayerLayer.frame];
-        _playerView.alpha = 1.0;
-        [UIView animateWithDuration:0.2f animations:^{
-            _menuView.alpha = 0.0f;
-        } completion:^(BOOL finished) {
-            [self playVideos];
-        }];
-    });
+    // We need to re-create the state of when -viewDidLoad is called
+    [_topEyeLensView setFrame:_firstPlayerLayer.frame];
+    [_bottomEyeLensView setFrame:_secondPlayerLayer.frame];
+    _playerView.alpha = 1.0;
+    [UIView animateWithDuration:0.2f animations:^{
+        _menuView.alpha = 0.0f;
+    } completion:^(BOOL finished) {
+        [self playVideos];
+    }];
 }
 
 -(void)advance
 {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.25 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-        // Save to DB
-        RLMRealm *realm = [RLMRealm defaultRealm];
-        [realm beginWriteTransaction];
-        [realm addObject:_teleport];
-        [realm commitWriteTransaction];
-        [self.navigationController popViewControllerAnimated:NO];
-    });
+    // Save to DB
+    RLMRealm *realm = [RLMRealm defaultRealm];
+    [realm beginWriteTransaction];
+    [realm addObject:_teleport];
+    [realm commitWriteTransaction];
+    [self.navigationController popViewControllerAnimated:NO];
+    if (self.onAdvanceHandler) self.onAdvanceHandler();
 }
 
 -(void)startAnimation
@@ -223,9 +247,22 @@
     } completion:nil];
 }
 
+-(void)stopAnimation:(dispatch_block_t)completion
+{
+    NSTimeInterval duration = 0.25f;
+    [UIView animateWithDuration:duration
+                          delay:0.0f
+                        options:UIViewAnimationOptionCurveEaseOut
+                     animations:^{
+                         [_topEyeLensView setFrame:topViewportRect];
+                         [_bottomEyeLensView setFrame:bottomViewportRect];
+                     } completion:^(BOOL finished) {
+                         if (completion) completion();
+                     }];
+}
+
 -(void)setup
 {
-    
     AVAsset *firstAsset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo1]] options:nil];
     AVAsset *secondAsset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo2]] options:nil];
     NSLog(@"1: %f", CMTimeGetSeconds(firstAsset.duration));
@@ -265,37 +302,6 @@
     NSLog(@"%f", [[[_secondPlayer.currentItem.asset tracksWithMediaType:AVMediaTypeVideo] firstObject] estimatedDataRate]);
 }
 
--(void)playVideos
-{
-    if (_menuEnabled) {
-        if (_menuView.alpha > 0) return;
-    }
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self playAt:kCMTimeZero player:_firstPlayer];
-        [self playAt:kCMTimeZero player:_secondPlayer];
-        [self startAnimation];
-    });
-}
-
--(void)didFinishPlaying:(NSNotification *) notification
-{
-    NSTimeInterval duration = 0.2f;
-    [UIView animateWithDuration:duration
-                          delay:0.0f
-                        options:UIViewAnimationOptionCurveEaseIn
-                     animations:^{
-                         _playerView.alpha = 0.0;
-                     } completion:^(BOOL finished) {
-                         if (_menuEnabled) {
-                             [UIView animateWithDuration:0.2f animations:^{
-                                 _menuView.alpha = 1.0;
-                             }];
-                         } else {
-                             [self.navigationController popViewControllerAnimated:YES];
-                         }
-                     }];
-}
-
 -(void)playAt:(CMTime)time player:(AVPlayer*)player {
     if(player.status == AVPlayerStatusReadyToPlay && player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
         [player setRate:1.0 time:time atHostTime:CMClockGetTime(syncClock)];
@@ -305,20 +311,6 @@
             [self playAt:time player:player];
         });
     }
-}
-
--(void)springOut:(UIButton*)sender
-{
-    [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
-        sender.layer.transform = CATransform3DMakeScale(1.3, 1.3, 1.0);
-    } completion:nil];
-}
-
--(void)restore:(UIButton*)sender
-{
-    [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.5 initialSpringVelocity:0 options:UIViewAnimationOptionAllowUserInteraction animations:^{
-        sender.layer.transform = CATransform3DMakeScale(1.0, 1.0, 1.0);
-    } completion:nil];
 }
 
 @end
