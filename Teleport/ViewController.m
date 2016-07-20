@@ -9,7 +9,6 @@
 #import "RecordTimer.h"
 #import "JPSVolumeButtonHandler.h"
 #import "TPUploadSession.h"
-#import "Teleport-Swift.h"
 #import "ListViewController.h"
 #import "FRDLivelyButton.h"
 #import "Teleport.h"
@@ -52,11 +51,11 @@ static const AVCaptureDevicePosition TPViewportTopCamera                = AVCapt
 static const AVCaptureDevicePosition TPViewportBottomCamera             = AVCaptureDevicePositionFront;
 static const TPViewport              TPRecordFirstViewport              = TPViewportTop;
 static const TPViewport              TPRecordSecondViewport             = TPViewportBottom;
-static const NSTimeInterval          TPRecordFirstInterval              = 5.0;
+static const NSTimeInterval          TPRecordFirstInterval              = 6.0;
 static const NSTimeInterval          TPRecordSecondInterval             = TPRecordFirstInterval;
 static const NSTimeInterval          TPRecordSecondGraceInterval        = 1.0;
 static const NSTimeInterval          TPRecordSecondGraceOpacity         = 0.9;
-static const NSInteger               TPRecordBitrate                    = 6000000;
+static const NSInteger               TPRecordBitrate                    = 7000000;
 static const NSInteger               TPRecordFramerate                  = 60;
 static const NSTimeInterval          TPProgressBarEarlyEndInterval      = 0.15;
 #define                              TPProgressBarWidth                 floorf((self.bounds.size.width*0.09))
@@ -89,7 +88,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 
 @end
 
-@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate, RecordProgressBarViewDelegate, UINavigationControllerDelegate, EasyTransitionDelegate>
+@interface ViewController () <IDCaptureSessionCoordinatorDelegate, CLLocationManagerDelegate, RecordProgressBarViewDelegate, UINavigationControllerDelegate>
 
 @property (nonatomic) TPCameraSetupResult setupResult;
 @property (nonatomic, strong) IDCaptureSessionAssetWriterCoordinator *sessionCoordinator;
@@ -104,7 +103,6 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
-@property (nonatomic, strong) EasyTransition *transition;
 @property (nonatomic, strong) Teleport *teleport;
 
 @end
@@ -183,13 +181,14 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
     // Status Label
     CGFloat barWidth = [_recordBarView barWidth];
     CGFloat barPadding = 10;
-    CGFloat labelHeight = 10;
+    CGFloat labelHeight = 30;
     _statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(barWidth+barPadding,
                                                              self.view.bounds.size.height - barWidth - barPadding - labelHeight,
                                                              self.view.bounds.size.width - (2*barWidth)-barPadding,
                                                              labelHeight)];
     _statusLabel.textColor = [UIColor whiteColor];
     _statusLabel.font = [UIFont systemFontOfSize:13.5];
+    _statusLabel.numberOfLines = 0;
     
     [self.view.layer insertSublayer:_previewLayer atIndex:0];
     [self.view.layer insertSublayer:_firstPlayerLayer atIndex:1];
@@ -210,7 +209,7 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
                                                                buttonSize,
                                                                buttonSize)];
     [button setStyle:kFRDLivelyButtonStyleHamburger animated:NO];
-    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(3.0f),
+    [button setOptions:@{ kFRDLivelyButtonLineWidth: @(2.0f),
                           kFRDLivelyButtonHighlightedColor: [UIColor colorWithWhite:0.8 alpha:1.0],
                           kFRDLivelyButtonColor: [UIColor darkGrayColor]
                           }];
@@ -645,7 +644,8 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
         if (_statusLabel.text == nil) {
             animate = YES;
         }
-        _statusLabel.text = [NSString stringWithFormat:@"%@ • %@", _teleport.location, time];
+        _statusLabel.text = [NSString stringWithFormat:@"%@\n%@", _teleport.location, time];
+        [_statusLabel sizeToFit];
         if (animate) {
             _statusLabel.alpha = 0.0;
             [UIView animateWithDuration:0.25 animations:^{
@@ -714,9 +714,9 @@ static const CLLocationDistance      TPLocationDistanceFilter           = 100;
 {
     return @{
               AVVideoCodecKey : AVVideoCodecH264,
-//              AVVideoWidthKey : @(1280),
-//              AVVideoHeightKey : @(960),
-//              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
+              AVVideoWidthKey : @(960),
+              AVVideoHeightKey : @(960),
+              AVVideoScalingModeKey : AVVideoScalingModeResizeAspectFill,
               AVVideoCompressionPropertiesKey : @{ AVVideoAverageBitRateKey : @(TPRecordBitrate),
                                                        AVVideoExpectedSourceFrameRateKey : @(TPRecordFramerate),
                                                        AVVideoMaxKeyFrameIntervalKey : @(TPRecordFramerate),
