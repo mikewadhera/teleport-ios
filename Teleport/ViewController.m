@@ -433,7 +433,7 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     blurView = [[UIVisualEffectView alloc] initWithFrame:self.view.bounds];
     [self.view insertSubview:blurView belowSubview:menuController.view];
     // Animate from right and blur in
-    [UIView animateWithDuration:(animated?TPMenuAnimateInterval:0.0) delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
+    [UIView animateWithDuration:(animated?TPMenuAnimateInterval:0.0) delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         blurView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
         [menuController.view setFrame:CGRectMake(TPMenuLeftMargin,
                                                  0,
@@ -452,7 +452,7 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     [button removeTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
     [button addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
     // Animate to right and remove blur
-    [UIView animateWithDuration:TPMenuAnimateInterval delay:0.0 options:UIViewAnimationOptionCurveLinear animations:^{
+    [UIView animateWithDuration:TPMenuAnimateInterval delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         blurView.effect = nil;
         [menuController.view setFrame:CGRectMake(self.view.bounds.size.width,
                                                  0,
