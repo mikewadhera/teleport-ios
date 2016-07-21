@@ -207,7 +207,7 @@
 
 -(void)cancel
 {
-    [self.navigationController popViewControllerAnimated:NO];
+    [self.navigationController popViewControllerAnimated:YES];
     [Teleport cleanupCaches:_teleport];
     _teleport = nil;
 }

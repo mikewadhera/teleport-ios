@@ -102,12 +102,14 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
 @property (nonatomic) AVCaptureVideoPreviewLayer *previewLayer;
 @property (nonatomic) AVPlayer *firstPlayer;
 @property (nonatomic) AVPlayerLayer *firstPlayerLayer;
+@property (nonatomic) CALayer *firstPlayerPreviewLayer;
 @property (nonatomic) RecordProgressBarView *recordBarView;
 @property (nonatomic) CALayer *secondRecordingVisualCueLayer;
 @property (nonatomic, strong) TPUploadSession *uploadSession;
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) Teleport *teleport;
 @property (nonatomic, strong) id animator;
+@property (nonatomic, strong) JPSVolumeButtonHandler *volumeHandler;
 
 @end
 
@@ -119,7 +121,6 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     RecordTimer *firstRecordingStopTimer;
     RecordTimer *secondRecordingStartTimer;
     RecordTimer *secondRecordingStopTimer;
-    JPSVolumeButtonHandler *volumeHandler;
     NSTimer *statusLabelTimer;
     FRDLivelyButton *button;
     ListViewController *menuController;
@@ -163,6 +164,10 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     _firstPlayer = [[AVPlayer alloc] init];
     _firstPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:_firstPlayer];
     _firstPlayerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    // Player preview layer
+    _firstPlayerPreviewLayer = [CALayer layer];
+    _firstPlayerPreviewLayer.contentsGravity = kCAGravityResizeAspectFill;
+    [_firstPlayerLayer addSublayer:_firstPlayerPreviewLayer];
     
     // Calculate Viewports
     int topViewW = self.view.frame.size.width;
@@ -339,7 +344,7 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
 
 -(void)addVolumeHandler
 {
-    volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
+    _volumeHandler = [JPSVolumeButtonHandler volumeButtonHandlerWithUpBlock:^{
         [self toggleRecording];
     } downBlock:^{
         [self toggleRecording];
@@ -349,7 +354,7 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
 
 -(void)removeVolumeHandler
 {
-    volumeHandler = nil;
+    _volumeHandler = nil;
 }
 
 -(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
@@ -373,6 +378,8 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
     [_firstPlayerLayer setFrame:CGRectZero]; // Off-screen
+    _firstPlayerPreviewLayer.contents = nil;
+    [_firstPlayerPreviewLayer setHidden:NO];
     [_previewLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
     [_secondRecordingVisualCueLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
     [_recordBarView reset];
@@ -563,6 +570,26 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
         } else if (newStatus == TPStateRecordingFirstCompleted) {
             
             assertFrom(TPStateRecordingFirstCompleting);
+            
+            // Grab the last frame to use as the player preview
+            AVURLAsset* asset = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[_teleport pathForVideo1]] options:nil];
+            AVAssetImageGenerator* generator = [AVAssetImageGenerator assetImageGeneratorWithAsset:asset];
+            generator.appliesPreferredTrackTransform = YES;
+            generator.requestedTimeToleranceBefore = kCMTimeZero;
+            generator.requestedTimeToleranceAfter = kCMTimeZero;
+            // Actually we don't want the last frame, but the last frame before the preview connection was disabled
+            // which is TPProgressBarEarlyEndInterval before last recorded frame
+            CMTime targetTime = CMTimeSubtract(asset.duration, CMTimeMake(TPProgressBarEarlyEndInterval*100, 100));
+            CGImageRef imgRef = [generator copyCGImageAtTime:targetTime actualTime:nil error:nil];
+            UIImage *previewImage = [[UIImage alloc] initWithCGImage:imgRef];
+            CGImageRelease(imgRef);
+
+            // Set image as player preview layer contents
+            [CATransaction begin];
+            [CATransaction setDisableActions:YES];
+            _firstPlayerPreviewLayer.contents = (id)previewImage.CGImage;
+            [CATransaction commit];
+            
             [self transitionToStatus:TPStateSessionConfigurationUpdated];
             
         } else if (newStatus == TPStateSessionConfigurationUpdated) {
@@ -570,41 +597,53 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
             // Vibrate
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             
-            // Disable layer setFrame animations
-            [CATransaction begin];
-            [CATransaction setDisableActions:YES];
-            
-            // Load and show first recording
+            // Load first recording
             NSURL *firstVideoURL = [NSURL fileURLWithPath:[_teleport pathForVideo1]];
             [_firstPlayer replaceCurrentItemWithPlayerItem:[AVPlayerItem
                                                             playerItemWithAsset:[AVAsset assetWithURL:firstVideoURL]]];
-            [_firstPlayer seekToTime:kCMTimeZero];
+            
+            // Show player preview layer (screenshot of last frame)
+            [CATransaction begin];
+            [CATransaction setDisableActions:YES];
             [_firstPlayerLayer setFrame:[self frameForViewport:TPRecordFirstViewport]];
+            [_firstPlayerPreviewLayer setFrame:_firstPlayerLayer.bounds];
+            [CATransaction commit]; // Commit before we switch config so preview layer is covered
             
-            // Switch camera configuration
-            // Note: -setDevicePosition is long running
-            [_sessionCoordinator setDevicePosition:[self cameraForViewport:TPRecordSecondViewport]];
-            
-            // Show new camera's preview
-            [_sessionCoordinator.previewLayer.connection setEnabled:YES];
-            [_previewLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
-            
-            [CATransaction commit];
-            
-            // Enter Grace period
-            // Set camera preview barely visible
-            [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
-            secondRecordingStartTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordSecondGraceInterval block: ^{
-                // Exit Grace period
-                // Show new camera preview, start first clip,
-                // continue progress bar and transition to recording
-                [_secondRecordingVisualCueLayer setHidden:YES];
-                [_firstPlayer play];
-                [_recordBarView resume];
-                @synchronized (self) {
-                    [self transitionToStatus:TPStateRecordingSecondStarting];
-                }
-            }];
+            // Tick run loop so above transaction commits fully
+            // before we change preview layer camera source
+            dispatch_async(dispatch_get_main_queue(), ^{
+                // Switch camera configuration
+                // Note: -setDevicePosition is long running
+                [_sessionCoordinator setDevicePosition:[self cameraForViewport:TPRecordSecondViewport]];
+                
+                // Show new camera's preview
+                [_sessionCoordinator.previewLayer.connection setEnabled:YES];
+                
+                // Disable setFrame animation
+                [CATransaction begin];
+                [CATransaction setDisableActions:YES];
+                [_previewLayer setFrame:[self frameForViewport:TPRecordSecondViewport]];
+                [CATransaction commit];
+                
+                // Enter Grace period
+                // Set camera preview barely visible
+                [_secondRecordingVisualCueLayer setOpacity:TPRecordSecondGraceOpacity];
+                secondRecordingStartTimer = [RecordTimer scheduleTimerWithTimeInterval:TPRecordSecondGraceInterval block: ^{
+                    // Exit Grace period
+                    // Show new camera preview, start first clip, remove player preview
+                    // continue progress bar and transition to recording
+                    [_secondRecordingVisualCueLayer setHidden:YES];
+                    [_firstPlayer play];
+                    [CATransaction begin];
+                    [CATransaction setDisableActions:YES];
+                    [_firstPlayerPreviewLayer setHidden:YES];
+                    [CATransaction commit];
+                    [_recordBarView resume];
+                    @synchronized (self) {
+                        [self transitionToStatus:TPStateRecordingSecondStarting];
+                    }
+                }];
+            });
             
         } else if (newStatus == TPStateRecordingSecondStarting) {
             
@@ -652,6 +691,10 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
         } else if (newStatus == TPStateRecordingCanceled) {
             
             assertFrom(TPStateRecordingCanceling);
+            
+            // HACK: Re-add volume handler as it leaks when second recording is canceled
+            [self addVolumeHandler];
+            
             [self transitionToStatus:TPStateRecordingIdle];
             
         }
