@@ -21,6 +21,7 @@
 @property (nonatomic) UIView *topEyeLensView;
 @property (nonatomic) UIView *bottomEyeLensView;
 @property (nonatomic) UIVisualEffectView *blurView;
+@property (nonatomic) UITapGestureRecognizer *tapRecognizer;
 
 @end
 
@@ -91,6 +92,7 @@
     
     _blurView = [[UIVisualEffectView alloc] initWithFrame:self.view.bounds];
     [_blurView setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
+    _blurView.userInteractionEnabled = NO;
     
     _topEyeLensView = [[UIView alloc] initWithFrame:topViewportRect];
     _topEyeLensView.backgroundColor = [UIColor blackColor];
@@ -150,6 +152,9 @@
     [_advanceButton addTarget:self action:@selector(advance) forControlEvents:UIControlEventTouchUpInside];
     [_menuView addSubview:_advanceButton];
     
+    _tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapPlayerView)];
+    [_playerView addGestureRecognizer:_tapRecognizer];
+    
     [self.view addSubview:_menuView];
     
     [self setup];
@@ -184,6 +189,13 @@
     [self playVideos];
 }
 
+-(void)didTapPlayerView
+{
+    [_firstPlayer pause];
+    [_secondPlayer pause];
+    [self skipToEnd];
+}
+
 -(void)playVideos
 {
     if (_menuEnabled && _menuView.alpha > 0) {
@@ -194,7 +206,7 @@
     [self playAt:kCMTimeZero player:_secondPlayer];
 }
 
--(void)didFinishPlaying:(NSNotification *) notification
+-(void)skipToEnd
 {
     [self closeEyes:^{
         if (_menuEnabled) {
@@ -205,6 +217,11 @@
             [self.navigationController popViewControllerAnimated:YES];
         }
     }];
+}
+
+-(void)didFinishPlaying:(NSNotification *) notification
+{
+    [self skipToEnd];
 }
 
 
@@ -255,10 +272,10 @@
 
 -(void)closeEyes:(dispatch_block_t)completion
 {
-    NSTimeInterval duration = 0.15f;
+    NSTimeInterval duration = 0.25f;
     [UIView animateWithDuration:duration
                           delay:0.0f
-                        options:UIViewAnimationOptionCurveEaseOut
+                        options:UIViewAnimationOptionCurveEaseOut|UIViewAnimationOptionBeginFromCurrentState
                      animations:^{
                          [_topEyeLensView setFrame:topViewportRect];
                          [_bottomEyeLensView setFrame:bottomViewportRect];
