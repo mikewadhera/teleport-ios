@@ -237,6 +237,8 @@
     // We need to re-create the state of when -viewDidLoad is called
     [_topEyeLensView setFrame:_firstPlayerLayer.frame];
     [_bottomEyeLensView setFrame:_secondPlayerLayer.frame];
+    [_firstPlayer seekToTime:kCMTimeZero];
+    [_secondPlayer seekToTime:kCMTimeZero];
     _blurView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
     _playerView.alpha = 1.0;
     [UIView animateWithDuration:0.2f animations:^{
@@ -259,7 +261,7 @@
 
 -(void)openEyes
 {
-    double animationDuation = 0.25;
+    double animationDuation = 0.33;
     [UIView animateWithDuration:animationDuation delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
         [_topEyeLensView setFrame:CGRectMake(_topEyeLensView.frame.origin.x, -_topEyeLensView.frame.size.height, _topEyeLensView.frame.size.width, _topEyeLensView.frame.size.height)];
         
@@ -272,7 +274,7 @@
 
 -(void)closeEyes:(dispatch_block_t)completion
 {
-    NSTimeInterval duration = 0.25f;
+    NSTimeInterval duration = 0.33f;
     [UIView animateWithDuration:duration
                           delay:0.0f
                         options:UIViewAnimationOptionCurveEaseOut|UIViewAnimationOptionBeginFromCurrentState
