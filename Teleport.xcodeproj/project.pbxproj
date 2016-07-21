@@ -19,7 +19,6 @@
 		FB0D9D5D1D0622DA0024CDC4 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB0D9D5C1D0622DA0024CDC4 /* ViewController.m */; };
 		FB0D9D601D0622DA0024CDC4 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */; };
 		FB0D9D621D0622DA0024CDC4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */; };
-		FB0D9D651D0622DA0024CDC4 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */; };
 		FB13716F1D385EF0002BB86F /* TeleportImages.m in Sources */ = {isa = PBXBuildFile; fileRef = FB13716E1D385EF0002BB86F /* TeleportImages.m */; };
 		FB1500A01D2C635100DB2251 /* RecordTimer.m in Sources */ = {isa = PBXBuildFile; fileRef = FB15009F1D2C635100DB2251 /* RecordTimer.m */; };
 		FB35E0AE1D21FAA8001F1F55 /* green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FB35E0AC1D21FAA8001F1F55 /* green@2x.png */; };
@@ -108,7 +107,6 @@
 		FB0D9D5C1D0622DA0024CDC4 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		FB0D9D5F1D0622DA0024CDC4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		FB0D9D641D0622DA0024CDC4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FB0D9D661D0622DA0024CDC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FB13716D1D385EF0002BB86F /* TeleportImages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TeleportImages.h; sourceTree = "<group>"; };
 		FB13716E1D385EF0002BB86F /* TeleportImages.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TeleportImages.m; sourceTree = "<group>"; };
@@ -290,7 +288,6 @@
 				FBF38E0F1D10D00300F7D881 /* PreviewViewController.m */,
 				FB0D9D5E1D0622DA0024CDC4 /* Main.storyboard */,
 				FB0D9D611D0622DA0024CDC4 /* Assets.xcassets */,
-				FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */,
 				FB0D9D661D0622DA0024CDC4 /* Info.plist */,
 				FB0D9D551D0622DA0024CDC4 /* Supporting Files */,
 				FB6EDDB51D1B4731008410FD /* TPGeocoder.h */,
@@ -427,7 +424,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FB0D9D651D0622DA0024CDC4 /* LaunchScreen.storyboard in Resources */,
 				FB8705681D07C50C00336D82 /* record@2x.png in Resources */,
 				FB6EDDCB1D1B9061008410FD /* x@2x.png in Resources */,
 				FB0D9D621D0622DA0024CDC4 /* Assets.xcassets in Resources */,
@@ -553,14 +549,6 @@
 			name = Main.storyboard;
 			sourceTree = "<group>";
 		};
-		FB0D9D631D0622DA0024CDC4 /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				FB0D9D641D0622DA0024CDC4 /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -651,6 +639,7 @@
 			baseConfigurationReference = 0EA3E49EC1A94BF8168764E2 /* Pods-Teleport.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -671,6 +660,7 @@
 			baseConfigurationReference = 4EF31B5DE9EA67E64C045EB3 /* Pods-Teleport.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				FRAMEWORK_SEARCH_PATHS = (
