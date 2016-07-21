@@ -27,16 +27,28 @@
     self.view.backgroundColor = [UIColor blackColor];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     
-    teleports = [[Teleport allObjects] sortedResultsUsingProperty:@"timestamp" ascending:NO];
+    teleports = [[Teleport allObjects] sortedResultsUsingProperty:@"timestamp" ascending:YES];
 }
 
 -(void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
     
+    [self scrollTableToBottom];
+    
     if (_tableView.indexPathForSelectedRow) {
         [_tableView deselectRowAtIndexPath:_tableView.indexPathForSelectedRow animated:YES];
     }
+}
+
+- (void)scrollTableToBottom
+{
+    if (!self.isViewLoaded || teleports.count == 0 || [self tableHeightMinusTableRowsHeight] >= 0)
+        return;
+    
+    CGFloat offsetY = self.tableView.contentSize.height - self.tableView.frame.size.height + self.tableView.contentInset.bottom;
+    
+    [self.tableView setContentOffset:CGPointMake(0, offsetY) animated:NO];
 }
 
 -(void)reload
@@ -46,9 +58,10 @@
 
 -(void)selectFirst
 {
-    [_tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]
+    [self scrollTableToBottom];
+    [_tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:teleports.count-1 inSection:0]
                             animated:NO
-                      scrollPosition:UITableViewScrollPositionTop];
+                      scrollPosition:UITableViewScrollPositionBottom];
 }
 
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -82,6 +95,25 @@
     Teleport *teleport = [teleports objectAtIndex:selectedIndexPath.row];
     vc.teleport = teleport;
     [self.navigationController pushViewController:vc animated:YES];
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectZero];
+    headerView.userInteractionEnabled = NO;
+    return headerView;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return MAX(0, [self tableHeightMinusTableRowsHeight]);
+}
+
+-(CGFloat)tableHeightMinusTableRowsHeight
+{
+    CGFloat tableHeight = self.tableView.frame.size.height;
+    CGFloat tableRowsHeight = teleports.count * 88;
+    return tableHeight - tableRowsHeight;
 }
 
 @end

@@ -438,7 +438,7 @@ static const NSTimeInterval          TPMenuAnimateInterval              = 0.2;
     // Manually remove volume handler since we don't tear down session
     [self removeVolumeHandler];
     // Set button target to closeMenu
-    [button setStyle:kFRDLivelyButtonStyleClose animated:YES];
+    [button setStyle:kFRDLivelyButtonStyleClose animated:animated];
     [button removeTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
     [button addTarget:self action:@selector(closeMenu) forControlEvents:UIControlEventTouchUpInside];
     // Add Blur

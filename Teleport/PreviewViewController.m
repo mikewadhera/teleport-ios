@@ -242,7 +242,7 @@
     [UIView animateWithDuration:0.2f animations:^{
         _menuView.alpha = 0.0f;
     } completion:^(BOOL finished) {
-        [self playVideos];
+        [self openEyes];
     }];
 }
 
