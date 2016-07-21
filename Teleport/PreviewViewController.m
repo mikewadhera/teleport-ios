@@ -20,6 +20,7 @@
 @property (nonatomic) UIButton *replayButton;
 @property (nonatomic) UIView *topEyeLensView;
 @property (nonatomic) UIView *bottomEyeLensView;
+@property (nonatomic) UIVisualEffectView *blurView;
 
 @end
 
@@ -88,6 +89,9 @@
     [_playerView.layer addSublayer:_firstPlayerLayer];
     [_playerView.layer addSublayer:_secondPlayerLayer];
     
+    _blurView = [[UIVisualEffectView alloc] initWithFrame:self.view.bounds];
+    [_blurView setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
+    
     _topEyeLensView = [[UIView alloc] initWithFrame:topViewportRect];
     _topEyeLensView.backgroundColor = [UIColor blackColor];
     
@@ -95,6 +99,7 @@
     _bottomEyeLensView.backgroundColor = [UIColor blackColor];
     
     [self.view addSubview:_playerView];
+    [self.view addSubview:_blurView];
     [self.view addSubview:_topEyeLensView];
     [self.view addSubview:_bottomEyeLensView];
     
@@ -157,7 +162,7 @@
 {
     [super viewDidAppear:animated];
     
-    [self playVideos];
+    [self openEyes];
 }
 
 -(void)viewWillDisappear:(BOOL)animated
@@ -171,7 +176,7 @@
 
 -(void)controllerWillBackground
 {
-    [self stopAnimation:nil];
+    [self closeEyes:nil];
 }
 
 -(void)controllerWillForeground
@@ -181,19 +186,17 @@
 
 -(void)playVideos
 {
-    if (_menuEnabled) {
-        if (_menuView.alpha > 0) return;
+    if (_menuEnabled && _menuView.alpha > 0) {
+        return;
     }
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self playAt:kCMTimeZero player:_firstPlayer];
-        [self playAt:kCMTimeZero player:_secondPlayer];
-        [self startAnimation];
-    });
+    
+    [self playAt:kCMTimeZero player:_firstPlayer];
+    [self playAt:kCMTimeZero player:_secondPlayer];
 }
 
 -(void)didFinishPlaying:(NSNotification *) notification
 {
-    [self stopAnimation:^{
+    [self closeEyes:^{
         if (_menuEnabled) {
             [UIView animateWithDuration:0.2f animations:^{
                 _menuView.alpha = 1.0;
@@ -217,6 +220,7 @@
     // We need to re-create the state of when -viewDidLoad is called
     [_topEyeLensView setFrame:_firstPlayerLayer.frame];
     [_bottomEyeLensView setFrame:_secondPlayerLayer.frame];
+    _blurView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
     _playerView.alpha = 1.0;
     [UIView animateWithDuration:0.2f animations:^{
         _menuView.alpha = 0.0f;
@@ -236,26 +240,29 @@
     [self.navigationController popViewControllerAnimated:YES];
 }
 
--(void)startAnimation
+-(void)openEyes
 {
-    double animationDuation = 0.3;
-    
+    double animationDuation = 0.25;
     [UIView animateWithDuration:animationDuation delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
         [_topEyeLensView setFrame:CGRectMake(_topEyeLensView.frame.origin.x, -_topEyeLensView.frame.size.height, _topEyeLensView.frame.size.width, _topEyeLensView.frame.size.height)];
         
         [_bottomEyeLensView setFrame:CGRectMake(_bottomEyeLensView.frame.origin.x, _bottomEyeLensView.frame.origin.y+_bottomEyeLensView.frame.size.height, _bottomEyeLensView.frame.size.width, _bottomEyeLensView.frame.size.height)];
-    } completion:nil];
+        [_blurView setEffect:nil];
+    } completion:^(BOOL finished) {
+        [self playVideos];
+    }];
 }
 
--(void)stopAnimation:(dispatch_block_t)completion
+-(void)closeEyes:(dispatch_block_t)completion
 {
-    NSTimeInterval duration = 0.3f;
+    NSTimeInterval duration = 0.15f;
     [UIView animateWithDuration:duration
                           delay:0.0f
                         options:UIViewAnimationOptionCurveEaseOut
                      animations:^{
                          [_topEyeLensView setFrame:topViewportRect];
                          [_bottomEyeLensView setFrame:bottomViewportRect];
+                         [_blurView setEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleLight]];
                      } completion:^(BOOL finished) {
                          if (completion) completion();
                      }];
